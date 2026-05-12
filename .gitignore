@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Geospatial intermediates (keep deliverables, exclude bulk)
+*.h5
+*.grib
+*.nc
+*.zip
+*.SAFE/
+data/raw/
+data/intermediate/
+data/cache/
+**/tile_*.tif
+**/cache/
+06-geoai-road-damage/models/*.pt
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Node (for Project 5 web dashboard)
+node_modules/
+dist/
+build/
+.next/
