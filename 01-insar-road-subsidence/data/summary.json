@@ -1,0 +1,12 @@
+{
+  "aoi": "Najafgarh Road, Sector 8 Dwarka, SW Delhi",
+  "aoi_center": {"lat": 28.587199, "lon": 77.044670},
+  "n_ps": 2555,
+  "vertical_velocity_mm_yr": {"min": -10.32, "max": 4.67, "mean": -1.20, "std": 2.22, "median": -1.03},
+  "eastwest_local_mm_yr": {"min": -7.83, "max": 8.42, "mean": 1.01, "std": 1.69, "median": 0.91},
+  "pmm_at_aoi_mm_yr": {"E": 40.04, "N": 39.22, "U": 0.0},
+  "reference_frame": "ITRF2014 NNR",
+  "decomposition": "True 2D (V_U + V_E) from ASC path 27 + DSC path 136",
+  "atmospheric_correction": "ERA5 via PyAPS3",
+  "egms_equivalent": "L3 (vertical + east-west components on regular grid)"
+}
