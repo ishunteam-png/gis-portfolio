@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Delhi InSAR — Subsidence Dashboard</title>
+
+<link rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://cdn.jsdelivr.net/npm/chroma-js@2.4.2/chroma.min.js"></script>
+
+<style>
+:root {
+    --bg:        #0f1419;
+    --panel:     #1a1f29;
+    --panel-2:   #232a36;
+    --line:      #2d3441;
+    --fg:        #e7ecf3;
+    --fg-dim:    #98a2b3;
+    --fg-mid:    #ced4da;
+    --accent:    #4dabf7;
+    --accent-2:  #ffd43b;
+    --bad:       #ff6b6b;
+    --good:      #51cf66;
+}
+*  { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                 "Helvetica Neue", Arial, sans-serif;
+    color: var(--fg); background: var(--bg);
+    display: grid;
+    grid-template-rows: 64px 1fr;
+    grid-template-columns: 340px 1fr;
+}
+
+header {
+    grid-column: 1 / 3; grid-row: 1;
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; padding: 0 20px; gap: 18px;
+}
+header h1 { margin: 0; font-size: 16px; font-weight: 600; }
+header h1 .sub { color: var(--fg-dim); font-weight: 400; margin-left: 10px; font-size: 13px; }
+header .stats { margin-left: auto; display: flex; gap: 10px; }
+.stat {
+    background: var(--panel-2);
+    padding: 6px 13px; border-radius: 7px;
+    border: 1px solid var(--line);
+    min-width: 96px;
+}
+.stat .lbl { color: var(--fg-dim); font-size: 11px; }
+.stat .val { color: var(--fg); font-size: 15px; font-weight: 600; }
+.stat .val .unit { color: var(--fg-dim); font-weight: 400; font-size: 12px; margin-left: 4px; }
+
+aside {
+    grid-column: 1; grid-row: 2;
+    background: var(--panel);
+    border-right: 1px solid var(--line);
+    padding: 14px 16px 24px 16px;
+    overflow-y: auto;
+}
+aside h2 {
+    margin: 16px 0 8px;
+    font-size: 11px; font-weight: 600;
+    color: var(--fg-dim);
+    text-transform: uppercase; letter-spacing: 1.4px;
+}
+aside h2:first-of-type { margin-top: 0; }
+
+.field { margin-bottom: 11px; }
+.field label { display: block; font-size: 12px; color: var(--fg-dim); margin-bottom: 5px; }
+.field select, .field input[type="range"], .field input[type="text"] {
+    width: 100%;
+    background: var(--panel-2); color: var(--fg);
+    border: 1px solid var(--line); border-radius: 5px;
+    padding: 7px 9px; font-size: 13px;
+    accent-color: var(--accent);
+}
+.field .range-row { display: flex; align-items: center; gap: 8px; }
+.field .range-row input { flex: 1; padding: 0; }
+.field .range-row .v { font-size: 12px; color: var(--fg); width: 60px; text-align: right; }
+.field .help { color: var(--fg-dim); font-size: 11px; margin-top: 4px; }
+
+#main {
+    grid-column: 2; grid-row: 2;
+    position: relative;
+    display: grid;
+    grid-template-rows: 1fr;
+    grid-template-columns: 1fr;
+}
+#main.split { grid-template-columns: 1fr 1fr; }
+#main.split #panel-right { display: block; border-left: 1px solid var(--line); }
+#panel-right { display: none; position: relative; }
+#panel-right .label-tag, #panel-left .label-tag {
+    position: absolute; top: 10px; left: 14px; z-index: 500;
+    background: rgba(15, 20, 25, 0.85); color: var(--fg);
+    padding: 5px 11px; border-radius: 5px;
+    font-size: 12px; font-weight: 600;
+    border: 1px solid var(--line);
+    pointer-events: none;
+}
+#map, #map2 { width: 100%; height: 100%; background: #0a0e14; }
+.leaflet-tile { filter: grayscale(0.15) brightness(0.85); }
+
+.legend {
+    margin-top: 8px; padding: 10px;
+    background: var(--panel-2); border-radius: 6px;
+    border: 1px solid var(--line);
+}
+.legend-bar { height: 12px; border-radius: 3px; margin-bottom: 4px; }
+.legend-ticks {
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: var(--fg-dim);
+}
+#histogram { width: 100%; height: 100px; background: var(--panel-2);
+             border: 1px solid var(--line); border-radius: 6px;
+             margin-top: 6px; }
+
+.toggle {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--panel-2);
+    border: 1px solid var(--line); border-radius: 6px;
+    padding: 8px 11px; cursor: pointer;
+    user-select: none; transition: all 0.15s ease;
+}
+.toggle:hover { border-color: var(--accent); }
+.toggle.on { border-color: var(--accent); background: rgba(77,171,247,0.10); }
+.toggle .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--fg-dim); transition: background 0.15s ease;
+}
+.toggle.on .dot { background: var(--accent); }
+.toggle .name { font-size: 13px; }
+
+.presets { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.preset {
+    background: var(--panel-2); border: 1px solid var(--line);
+    color: var(--fg); border-radius: 5px;
+    padding: 7px 8px; font-size: 12px; cursor: pointer;
+    text-align: left; transition: border-color 0.15s ease;
+}
+.preset:hover { border-color: var(--accent); color: var(--accent); }
+.preset .ttl { display: block; font-weight: 600; margin-bottom: 2px; }
+.preset .sub { display: block; color: var(--fg-dim); font-size: 10px; }
+
+.leaflet-popup-content-wrapper {
+    background: var(--panel); color: var(--fg);
+    border: 1px solid var(--line);
+    border-radius: 7px; box-shadow: 0 6px 24px rgba(0,0,0,0.4);
+}
+.leaflet-popup-tip { background: var(--panel); border: 1px solid var(--line); }
+.leaflet-popup-content { font-family: inherit; font-size: 12px; line-height: 1.55; }
+.leaflet-popup-content table { border-collapse: collapse; }
+.leaflet-popup-content td { padding: 2px 8px 2px 0; }
+.leaflet-popup-content td:first-child { color: var(--fg-dim); }
+.leaflet-popup-content td.v-neg { color: var(--bad); font-weight: 600; }
+.leaflet-popup-content td.v-pos { color: var(--good); font-weight: 600; }
+
+#loading {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(15, 20, 25, 0.85); color: var(--fg-dim);
+    font-size: 14px; z-index: 600;
+}
+
+.foot {
+    color: var(--fg-dim); font-size: 11px;
+    margin-top: 22px; line-height: 1.55;
+    border-top: 1px solid var(--line); padding-top: 12px;
+}
+.foot a { color: var(--accent); text-decoration: none; }
+.copy-link {
+    background: var(--accent); color: #000; border: none;
+    padding: 6px 10px; border-radius: 5px;
+    font-size: 12px; font-weight: 600;
+    cursor: pointer; margin-top: 6px;
+}
+.copy-link:active { transform: translateY(1px); }
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>Delhi InSAR Subsidence
+        <span class="sub">Najafgarh Road · strict EGMS-L3 pilot</span>
+    </h1>
+    <div class="stats">
+        <div class="stat"><div class="lbl">PS visible</div><div class="val" id="stat-count">—</div></div>
+        <div class="stat"><div class="lbl">Mean V<sub>U</sub></div><div class="val" id="stat-mean">—<span class="unit">mm/yr</span></div></div>
+        <div class="stat"><div class="lbl">Min V<sub>U</sub></div><div class="val" id="stat-min">—<span class="unit">mm/yr</span></div></div>
+        <div class="stat"><div class="lbl">Max V<sub>U</sub></div><div class="val" id="stat-max">—<span class="unit">mm/yr</span></div></div>
+    </div>
+</header>
+
+<aside>
+    <h2>One-click presets</h2>
+    <div class="presets">
+        <button class="preset" data-preset="all">
+            <span class="ttl">All PS</span>
+            <span class="sub">no filter, V_U colour</span>
+        </button>
+        <button class="preset" data-preset="subs">
+            <span class="ttl">Subsidence ≥ 3 mm/yr</span>
+            <span class="sub">show only sinking PS</span>
+        </button>
+        <button class="preset" data-preset="severe">
+            <span class="ttl">Severe (≥ 5 mm/yr)</span>
+            <span class="sub">top-priority cells</span>
+        </button>
+        <button class="preset" data-preset="stable">
+            <span class="ttl">Stable band (±1)</span>
+            <span class="sub">control reference</span>
+        </button>
+        <button class="preset" data-preset="east">
+            <span class="ttl">Strong east motion</span>
+            <span class="sub">V_E filter</span>
+        </button>
+        <button class="preset" data-preset="reset">
+            <span class="ttl">Reset</span>
+            <span class="sub">restore defaults</span>
+        </button>
+    </div>
+
+    <h2>Colour by</h2>
+    <div class="field">
+        <select id="color-mode">
+            <option value="v_vertical_mm_yr">Vertical velocity V_U</option>
+            <option value="v_eastwest_local_mm_yr">East-west velocity V_E (local)</option>
+            <option value="v_los_asc_mm_yr">LOS velocity (ascending)</option>
+            <option value="v_los_dsc_mm_yr">LOS velocity (descending)</option>
+        </select>
+        <div class="help">red = subsidence / west · blue = uplift / east</div>
+    </div>
+
+    <h2>Filter — V<sub>U</sub> range</h2>
+    <div class="field">
+        <label>Min V<sub>U</sub></label>
+        <div class="range-row">
+            <input type="range" id="vmin" min="-12" max="6" step="0.1" value="-12" />
+            <span class="v" id="vmin-v">−12.0</span>
+        </div>
+    </div>
+    <div class="field">
+        <label>Max V<sub>U</sub></label>
+        <div class="range-row">
+            <input type="range" id="vmax" min="-12" max="6" step="0.1" value="6" />
+            <span class="v" id="vmax-v">+6.0</span>
+        </div>
+    </div>
+
+    <h2>Filter — Coherence</h2>
+    <div class="field">
+        <label>Min temporal coherence (both stacks)</label>
+        <div class="range-row">
+            <input type="range" id="coh" min="0.85" max="0.99" step="0.01" value="0.85" />
+            <span class="v" id="coh-v">0.85</span>
+        </div>
+    </div>
+
+    <h2>Layers</h2>
+    <div class="field">
+        <div id="split-toggle" class="toggle">
+            <span class="name">Split view (V_U / V_E side-by-side)</span>
+            <span class="dot"></span>
+        </div>
+    </div>
+    <div class="field">
+        <div id="top-toggle" class="toggle">
+            <span class="name">Highlight top-20 most subsiding</span>
+            <span class="dot"></span>
+        </div>
+    </div>
+    <div class="field">
+        <div id="aoi-toggle" class="toggle on">
+            <span class="name">AOI outline</span>
+            <span class="dot"></span>
+        </div>
+    </div>
+
+    <h2>Distribution — V<sub>U</sub> (visible only)</h2>
+    <canvas id="histogram" width="280" height="100"></canvas>
+
+    <h2>Legend</h2>
+    <div class="legend">
+        <div class="legend-bar" id="legend-bar"></div>
+        <div class="legend-ticks">
+            <span>−12 mm/yr</span><span>0</span><span>+6 mm/yr</span>
+        </div>
+    </div>
+
+    <button class="copy-link" id="copy-link">Copy shareable URL ↗</button>
+
+    <div class="foot">
+        Data: SATALITE Delhi pilot · 2,656 PS · 3-year window 2023-05 → 2026-04 ·
+        ASC path 27 + DSC path 136 · ERA5-corrected · ITRF14.<br><br>
+        Project repo: <a href="../01-insar-road-subsidence/">/01-insar-road-subsidence</a><br>
+        Filters are reflected in the URL hash, so the "Copy shareable URL" button
+        captures exactly what you're looking at.
+    </div>
+</aside>
+
+<div id="main">
+    <div id="panel-left" style="position:relative">
+        <div id="map"></div>
+        <div class="label-tag" id="left-tag">V_U</div>
+    </div>
+    <div id="panel-right">
+        <div id="map2"></div>
+        <div class="label-tag" id="right-tag">V_E</div>
+    </div>
+    <div id="loading">Loading 2,656 Persistent Scatterers…</div>
+</div>
+
+<script>
+const AOI = [
+    [28.567, 77.024], [28.567, 77.065],
+    [28.607, 77.065], [28.607, 77.024], [28.567, 77.024]
+];
+
+const map = L.map('map', { zoomControl: true, preferCanvas: true })
+    .setView([28.587, 77.0447], 14);
+const map2 = L.map('map2', { zoomControl: false, preferCanvas: true })
+    .setView([28.587, 77.0447], 14);
+function tileLayerFactory() {
+    return L.tileLayer(
+        'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        { attribution: '&copy; OpenStreetMap &copy; CartoDB',
+          subdomains: 'abcd', maxZoom: 19 }
+    );
+}
+tileLayerFactory().addTo(map);
+tileLayerFactory().addTo(map2);
+
+map.on('move', () => { if (state.split) map2.setView(map.getCenter(), map.getZoom(), {animate: false}); });
+map2.on('move', () => { if (state.split) map.setView(map2.getCenter(), map2.getZoom(), {animate: false}); });
+
+let aoiLayer = L.polyline(AOI, {color: '#4dabf7', weight: 2, opacity: 0.55, dashArray: '6 6'}).addTo(map);
+let aoiLayer2 = L.polyline(AOI, {color: '#4dabf7', weight: 2, opacity: 0.55, dashArray: '6 6'});
+
+function makeRamp() {
+    return chroma.scale(['#b30000', '#f4a582', '#ffffbf', '#92c5de', '#0571b0'])
+                 .domain([-10, -3, 0, 3, 6]);
+}
+let ramp = makeRamp();
+function colorFor(v) {
+    if (v == null || isNaN(v)) return '#888';
+    return ramp(v).hex();
+}
+
+const state = {
+    mode: 'v_vertical_mm_yr',
+    vmin: -12, vmax: 6, coh: 0.85,
+    top: false, aoi: true, split: false,
+};
+
+function loadHash() {
+    const h = window.location.hash.slice(1);
+    if (!h) return;
+    for (const part of h.split('&')) {
+        const [k, v] = part.split('=');
+        if (!k || v == null) continue;
+        if (k in state) state[k] = (k === 'top' || k === 'aoi' || k === 'split')
+                                   ? (v === '1') : (isNaN(+v) ? v : +v);
+    }
+}
+function syncHash() {
+    const h = Object.entries(state).map(([k, v]) =>
+        `${k}=${typeof v === 'boolean' ? (v ? 1 : 0) : v}`).join('&');
+    history.replaceState(null, '', '#' + h);
+}
+
+function applyStateToUI() {
+    document.getElementById('color-mode').value = state.mode;
+    document.getElementById('vmin').value = state.vmin;
+    document.getElementById('vmax').value = state.vmax;
+    document.getElementById('coh').value  = state.coh;
+    document.getElementById('top-toggle').classList.toggle('on', state.top);
+    document.getElementById('aoi-toggle').classList.toggle('on', state.aoi);
+    document.getElementById('split-toggle').classList.toggle('on', state.split);
+}
+
+function renderLegend() {
+    const stops = [];
+    for (let i = 0; i <= 30; i++) {
+        const t = i / 30;
+        const v = -12 + t * 18;
+        stops.push(ramp(v).hex() + ' ' + (t*100).toFixed(0) + '%');
+    }
+    document.getElementById('legend-bar').style.background =
+        'linear-gradient(to right, ' + stops.join(', ') + ')';
+}
+renderLegend();
+
+let allFeatures = [];
+let layerGroup    = L.layerGroup().addTo(map);
+let layerGroup2   = L.layerGroup();
+let highlightGroup  = L.layerGroup().addTo(map);
+let highlightGroup2 = L.layerGroup();
+
+function applySplit() {
+    const main = document.getElementById('main');
+    main.classList.toggle('split', state.split);
+    if (state.split) {
+        layerGroup2.addTo(map2);
+        highlightGroup2.addTo(map2);
+        if (state.aoi) aoiLayer2.addTo(map2);
+        setTimeout(() => { map2.invalidateSize(); map.invalidateSize(); }, 50);
+    } else {
+        map2.removeLayer(layerGroup2);
+        map2.removeLayer(highlightGroup2);
+        if (aoiLayer2._map) map2.removeLayer(aoiLayer2);
+        setTimeout(() => { map.invalidateSize(); }, 50);
+    }
+}
+
+function popupHtml(p) {
+    const fmt = (x, dp=2) => (x == null || isNaN(x))
+        ? '—' : (x >= 0 ? '+' : '') + x.toFixed(dp);
+    const cls = (x) => x < 0 ? 'v-neg' : 'v-pos';
+    return `
+        <table>
+        <tr><td>V<sub>U</sub></td><td class="${cls(p.v_vertical_mm_yr)}">${fmt(p.v_vertical_mm_yr)} mm/yr</td></tr>
+        <tr><td>V<sub>E</sub> local</td><td class="${cls(p.v_eastwest_local_mm_yr)}">${fmt(p.v_eastwest_local_mm_yr)} mm/yr</td></tr>
+        <tr><td>LOS ASC</td><td>${fmt(p.v_los_asc_mm_yr)} mm/yr</td></tr>
+        <tr><td>LOS DSC</td><td>${fmt(p.v_los_dsc_mm_yr)} mm/yr</td></tr>
+        <tr><td>tcoh ASC / DSC</td><td>${fmt(p.tcoh_asc, 3)} / ${fmt(p.tcoh_dsc, 3)}</td></tr>
+        <tr><td>lat / lon</td><td>${p.lat.toFixed(5)} / ${p.lon.toFixed(5)}</td></tr>
+        </table>
+    `;
+}
+
+function rebuild() {
+    syncRangeLabels(); syncHash();
+
+    layerGroup.clearLayers();
+    layerGroup2.clearLayers();
+    highlightGroup.clearLayers();
+    highlightGroup2.clearLayers();
+
+    const prop = state.mode;
+    const lo = +state.vmin, hi = +state.vmax, c = +state.coh;
+    const visible = [];
+
+    for (const f of allFeatures) {
+        const p = f.properties, g = f.geometry.coordinates;
+        const vu = p.v_vertical_mm_yr;
+        if (vu < lo || vu > hi) continue;
+        if (p.tcoh_asc < c || p.tcoh_dsc < c) continue;
+        visible.push(f);
+        const v_left = p[prop];
+        L.circleMarker([g[1], g[0]], {
+            radius: 3.4, color: colorFor(v_left), fillColor: colorFor(v_left),
+            weight: 0.6, opacity: 0.9, fillOpacity: 0.92,
+        }).bindPopup(popupHtml(p)).addTo(layerGroup);
+        if (state.split) {
+            const v_right = p.v_eastwest_local_mm_yr;
+            L.circleMarker([g[1], g[0]], {
+                radius: 3.4, color: colorFor(v_right), fillColor: colorFor(v_right),
+                weight: 0.6, opacity: 0.9, fillOpacity: 0.92,
+            }).addTo(layerGroup2);
+        }
+    }
+
+    if (state.top) {
+        const sorted = [...visible]
+            .sort((a,b) => a.properties.v_vertical_mm_yr - b.properties.v_vertical_mm_yr)
+            .slice(0, 20);
+        for (const f of sorted) {
+            const g = f.geometry.coordinates;
+            L.circleMarker([g[1], g[0]], {
+                radius: 9, color: '#ffd43b', weight: 2.5, fill: false, opacity: 0.95,
+            }).addTo(highlightGroup);
+            if (state.split) {
+                L.circleMarker([g[1], g[0]], {
+                    radius: 9, color: '#ffd43b', weight: 2.5, fill: false, opacity: 0.95,
+                }).addTo(highlightGroup2);
+            }
+        }
+    }
+
+    document.getElementById('left-tag').textContent =
+        ({v_vertical_mm_yr: 'V_U', v_eastwest_local_mm_yr: 'V_E',
+          v_los_asc_mm_yr: 'LOS ASC', v_los_dsc_mm_yr: 'LOS DSC'})[state.mode];
+
+    updateStats(visible);
+    drawHistogram(visible);
+}
+
+function updateStats(vis) {
+    if (vis.length === 0) {
+        for (const id of ['stat-count','stat-mean','stat-min','stat-max']) {
+            document.getElementById(id).innerHTML = id==='stat-count'?'0'
+                :'—<span class="unit">mm/yr</span>';
+        }
+        return;
+    }
+    const vs = vis.map(f => f.properties.v_vertical_mm_yr);
+    const n = vs.length;
+    const mean = vs.reduce((a,b) => a + b, 0) / n;
+    const lo = Math.min(...vs), hi = Math.max(...vs);
+    const fmt = (x) => (x >= 0 ? '+' : '') + x.toFixed(2);
+    document.getElementById('stat-count').textContent = n.toLocaleString();
+    document.getElementById('stat-mean').innerHTML = `${fmt(mean)}<span class="unit">mm/yr</span>`;
+    document.getElementById('stat-min').innerHTML  = `${fmt(lo)}<span class="unit">mm/yr</span>`;
+    document.getElementById('stat-max').innerHTML  = `${fmt(hi)}<span class="unit">mm/yr</span>`;
+}
+
+function drawHistogram(vis) {
+    const c = document.getElementById('histogram');
+    const ctx = c.getContext('2d');
+    const W = c.width, H = c.height;
+    ctx.clearRect(0, 0, W, H);
+    if (vis.length === 0) return;
+
+    const lo = -12, hi = 6, bins = 36;
+    const w = (hi - lo) / bins;
+    const counts = new Array(bins).fill(0);
+    for (const f of vis) {
+        const v = f.properties.v_vertical_mm_yr;
+        const k = Math.min(bins - 1, Math.max(0, Math.floor((v - lo) / w)));
+        counts[k]++;
+    }
+    const maxC = Math.max(...counts);
+    const barW = W / bins;
+    for (let i = 0; i < bins; i++) {
+        const h = (counts[i] / maxC) * (H - 18);
+        const cx = lo + (i + 0.5) * w;
+        ctx.fillStyle = colorFor(cx);
+        ctx.fillRect(i * barW, H - h - 4, barW - 1, h);
+    }
+    const zeroX = ((0 - lo) / (hi - lo)) * W;
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.setLineDash([2,2]);
+    ctx.beginPath(); ctx.moveTo(zeroX, 0); ctx.lineTo(zeroX, H - 4); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#98a2b3'; ctx.font = '10px sans-serif';
+    ctx.fillText('−12', 2, H - 1);
+    ctx.fillText('0',  zeroX - 4, H - 1);
+    ctx.fillText('+6', W - 14, H - 1);
+}
+
+function syncRangeLabels() {
+    const v = (x) => (x >= 0 ? '+' : '') + (+x).toFixed(1);
+    document.getElementById('vmin-v').textContent = v(state.vmin);
+    document.getElementById('vmax-v').textContent = v(state.vmax);
+    document.getElementById('coh-v').textContent = (+state.coh).toFixed(2);
+}
+
+const PRESETS = {
+    all:     {mode:'v_vertical_mm_yr', vmin:-12,vmax:6, coh:0.85, top:false},
+    subs:    {mode:'v_vertical_mm_yr', vmin:-12,vmax:-3,coh:0.85, top:false},
+    severe:  {mode:'v_vertical_mm_yr', vmin:-12,vmax:-5,coh:0.85, top:true},
+    stable:  {mode:'v_vertical_mm_yr', vmin:-1, vmax:1, coh:0.90, top:false},
+    east:    {mode:'v_eastwest_local_mm_yr', vmin:-12,vmax:6, coh:0.85, top:false},
+    reset:   {mode:'v_vertical_mm_yr', vmin:-12,vmax:6, coh:0.85, top:false, split:false},
+};
+
+document.getElementById('color-mode').addEventListener('change', e => {
+    state.mode = e.target.value; rebuild();
+});
+for (const id of ['vmin','vmax','coh']) {
+    document.getElementById(id).addEventListener('input', e => {
+        state[id] = +e.target.value; rebuild();
+    });
+}
+document.getElementById('top-toggle').addEventListener('click', e => {
+    state.top = !state.top;
+    e.currentTarget.classList.toggle('on', state.top);
+    rebuild();
+});
+document.getElementById('aoi-toggle').addEventListener('click', e => {
+    state.aoi = !state.aoi;
+    e.currentTarget.classList.toggle('on', state.aoi);
+    if (state.aoi) aoiLayer.addTo(map); else map.removeLayer(aoiLayer);
+    if (state.split) {
+        if (state.aoi) aoiLayer2.addTo(map2); else map2.removeLayer(aoiLayer2);
+    }
+    syncHash();
+});
+document.getElementById('split-toggle').addEventListener('click', e => {
+    state.split = !state.split;
+    e.currentTarget.classList.toggle('on', state.split);
+    applySplit();
+    rebuild();
+});
+for (const btn of document.querySelectorAll('.preset')) {
+    btn.addEventListener('click', () => {
+        const p = PRESETS[btn.dataset.preset];
+        for (const k in p) state[k] = p[k];
+        applyStateToUI(); applySplit(); rebuild();
+    });
+}
+document.getElementById('copy-link').addEventListener('click', () => {
+    navigator.clipboard?.writeText(window.location.href);
+    const btn = document.getElementById('copy-link');
+    const old = btn.textContent;
+    btn.textContent = 'Copied ✓'; setTimeout(() => btn.textContent = old, 1200);
+});
+
+loadHash();
+applyStateToUI();
+applySplit();
+
+fetch('data/persistent_scatterers.geojson')
+    .then(r => r.json())
+    .then(g => {
+        allFeatures = g.features;
+        document.getElementById('loading').style.display = 'none';
+        rebuild();
+        const lats = allFeatures.map(f => f.geometry.coordinates[1]);
+        const lons = allFeatures.map(f => f.geometry.coordinates[0]);
+        const b = [[Math.min(...lats), Math.min(...lons)],
+                   [Math.max(...lats), Math.max(...lons)]];
+        map.fitBounds(b, { padding: [30, 30] });
+        map2.fitBounds(b, { padding: [30, 30] });
+    })
+    .catch(err => {
+        document.getElementById('loading').textContent =
+            'Could not load PS data — serve over HTTP (`py -m http.server`).';
+        console.error(err);
+    });
+</script>
+</body>
+</html>
