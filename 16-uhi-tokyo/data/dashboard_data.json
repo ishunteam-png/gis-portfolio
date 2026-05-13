@@ -1,0 +1,45 @@
+{
+  "city": "Tokyo, Japan",
+  "aoi": {
+    "w": 139.467,
+    "s": 35.43,
+    "e": 140.067,
+    "n": 35.93
+  },
+  "grid": {
+    "n_x": 32,
+    "n_y": 32,
+    "cell_size_deg": 0.018749999999999822,
+    "cell_size_km": 1.69
+  },
+  "n_cells": 1024,
+  "snapshot": "2024-08-12 (August 2024 heat-wave peak)",
+  "uhi_intensity_c": 5.63,
+  "mean_center_c": 35.41,
+  "mean_rural_c": 29.78,
+  "lst_min_c": 23.31,
+  "lst_max_c": 37.43,
+  "ndvi_min": -0.04,
+  "ndvi_max": 0.899,
+  "spearman_lst_ndvi": -0.495,
+  "spearman_lst_ndvi_land": -0.815,
+  "landcover_stats": [
+    {"idx": 0, "name": "Urban dense",  "color": "#a01619", "n_cells": 47,  "mean_lst_c": 35.35, "mean_ndvi": 0.04},
+    {"idx": 1, "name": "Urban medium", "color": "#e64a19", "n_cells": 124, "mean_lst_c": 32.64, "mean_ndvi": 0.154},
+    {"idx": 2, "name": "Suburban",     "color": "#fb8c00", "n_cells": 743, "mean_lst_c": 30.40, "mean_ndvi": 0.381},
+    {"idx": 3, "name": "Park / golf",  "color": "#5ec962", "n_cells": 6,   "mean_lst_c": 29.97, "mean_ndvi": 0.598},
+    {"idx": 4, "name": "Forest",       "color": "#1e6e2b", "n_cells": 33,  "mean_lst_c": 24.40, "mean_ndvi": 0.857},
+    {"idx": 5, "name": "Water",        "color": "#2b7a99", "n_cells": 71,  "mean_lst_c": 27.15, "mean_ndvi": 0.006}
+  ],
+  "landcover": [
+    {"idx": 0, "name": "Urban dense",  "color": "#a01619"},
+    {"idx": 1, "name": "Urban medium", "color": "#e64a19"},
+    {"idx": 2, "name": "Suburban",     "color": "#fb8c00"},
+    {"idx": 3, "name": "Park / golf",  "color": "#5ec962"},
+    {"idx": 4, "name": "Forest",       "color": "#1e6e2b"},
+    {"idx": 5, "name": "Water",        "color": "#2b7a99"}
+  ],
+  "compact_keys": ["lon", "lat", "lst_c_x10", "ndvi_x1000", "landcover_idx"],
+  "data_files": {"cells": "data/cells.json"},
+  "data_source": "Landsat 8/9 Coll-2 L2 ST_B10 · Sentinel-2 L2A NDVI · JAXA AW3D30 · Tokyo AOI"
+}
