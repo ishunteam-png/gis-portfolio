@@ -235,17 +235,19 @@ footer a:hover { text-decoration: underline; }
 
 <section class="hero">
   <div class="kicker">GIS / Geospatial Portfolio</div>
-  <h1>Ten end-to-end <span class="grad">geospatial projects</span><br>with interactive dashboards</h1>
+  <h1>Fifteen end-to-end <span class="grad">geospatial projects</span><br>with interactive dashboards</h1>
   <p class="tagline">
     InSAR remote sensing, location intelligence, route optimization, compound flood modelling,
-    web mapping, GeoAI, <strong>LULC classification, 15-min city accessibility, deforestation time series,
-    and H3 mobility analytics</strong>. Each project ships with its own <strong>interactive Leaflet dashboard</strong>
+    web mapping, GeoAI, LULC classification, 15-min city accessibility, deforestation time series,
+    H3 mobility analytics, <strong>Rothermel wildfire spread, rooftop solar potential, TROPOMI NO₂ plumes,
+    AIS vessel tracking, and S1+S2 crop classification</strong>.
+    Each project ships with its own <strong>interactive Leaflet dashboard</strong>
     — built from scratch, end-to-end, and running live on GitHub Pages.
   </p>
 
   <div class="hero-stats">
-    <div class="hero-stat"><span class="v">10</span><span class="l">Projects</span></div>
-    <div class="hero-stat"><span class="v">10</span><span class="l">Live dashboards</span></div>
+    <div class="hero-stat"><span class="v">15</span><span class="l">Projects</span></div>
+    <div class="hero-stat"><span class="v">15</span><span class="l">Live dashboards</span></div>
   </div>
 
   <div class="cta-row">
@@ -253,7 +255,7 @@ footer a:hover { text-decoration: underline; }
       🚀 Launch flagship dashboard
     </a>
     <a class="cta cta-secondary" href="#projects">
-      Browse all 10 projects ↓
+      Browse all 15 projects ↓
     </a>
   </div>
 </section>
@@ -490,6 +492,126 @@ footer a:hover { text-decoration: underline; }
     <div class="actions">
       <a class="btn btn-primary" href="10-h3-mobility/">Open dashboard →</a>
       <a class="btn btn-secondary" href="https://github.com/ishunteam-png/gis-portfolio/tree/main/10-h3-mobility" title="Source on GitHub">↗</a>
+    </div>
+  </article>
+
+  <article class="card">
+    <div class="card-head">
+      <div class="card-num">PROJECT<span class="big">11</span></div>
+      <span class="badge"><span class="live-dot"></span>Live</span>
+    </div>
+    <h3>Wildfire Spread — Park Fire CA 2024</h3>
+    <p>
+      Rothermel surface-fire <strong>cellular automaton</strong> on a 32×32 LANDFIRE fuel
+      grid with HRRR <strong>NE Diablo wind</strong> forcing. <strong>961/1,024 cells</strong> burned
+      by hour 120; peak spread rate 28 m/h. Dashboard has an hourly slider, wind-vector
+      overlay, and three fuel-model toggles.
+    </p>
+    <div class="pills">
+      <span class="pill">Rothermel</span>
+      <span class="pill">LANDFIRE</span>
+      <span class="pill">HRRR wind</span>
+      <span class="pill">VIIRS</span>
+    </div>
+    <div class="actions">
+      <a class="btn btn-primary" href="11-wildfire-spread/">Open dashboard →</a>
+      <a class="btn btn-secondary" href="https://github.com/ishunteam-png/gis-portfolio/tree/main/11-wildfire-spread" title="Source on GitHub">↗</a>
+    </div>
+  </article>
+
+  <article class="card">
+    <div class="card-head">
+      <div class="card-num">PROJECT<span class="big">12</span></div>
+      <span class="badge"><span class="live-dot"></span>Live</span>
+    </div>
+    <h3>Rooftop Solar Potential — Lisbon</h3>
+    <p>
+      Per-building annual PV generation across <strong>450 rooftops</strong> in 5
+      neighbourhoods. OSM polygons × Copernicus 25 m DEM (slope/aspect) × pvlib
+      irradiance × skyline-shading raycast. <strong>12.5 GWh/yr ≡ 4,178 Portuguese
+      households</strong>. Dashboard ranks by kWh/m².
+    </p>
+    <div class="pills">
+      <span class="pill">OSMnx</span>
+      <span class="pill">py3dep</span>
+      <span class="pill">pvlib</span>
+      <span class="pill">PVGIS</span>
+    </div>
+    <div class="actions">
+      <a class="btn btn-primary" href="12-solar-lisbon/">Open dashboard →</a>
+      <a class="btn btn-secondary" href="https://github.com/ishunteam-png/gis-portfolio/tree/main/12-solar-lisbon" title="Source on GitHub">↗</a>
+    </div>
+  </article>
+
+  <article class="card">
+    <div class="card-head">
+      <div class="card-num">PROJECT<span class="big">13</span></div>
+      <span class="badge"><span class="live-dot"></span>Live</span>
+    </div>
+    <h3>Sentinel-5P NO₂ Plume — Delhi</h3>
+    <p>
+      Tropospheric NO₂ over Delhi from <strong>TROPOMI L3 monthly composites</strong>.
+      728 cells, 11 CPCB hotspots, Gaussian plume model. <strong>100% WHO exceedance
+      in January vs 10% in June</strong> — winter inversion + monsoon scrubbing
+      sharply visible. Dashboard has a 12-month slider.
+    </p>
+    <div class="pills">
+      <span class="pill">Sentinel-5P</span>
+      <span class="pill">TROPOMI</span>
+      <span class="pill">xarray</span>
+      <span class="pill">CPCB</span>
+    </div>
+    <div class="actions">
+      <a class="btn btn-primary" href="13-no2-delhi/">Open dashboard →</a>
+      <a class="btn btn-secondary" href="https://github.com/ishunteam-png/gis-portfolio/tree/main/13-no2-delhi" title="Source on GitHub">↗</a>
+    </div>
+  </article>
+
+  <article class="card">
+    <div class="card-head">
+      <div class="card-num">PROJECT<span class="big">14</span></div>
+      <span class="badge"><span class="live-dot"></span>Live</span>
+    </div>
+    <h3>AIS Vessel Tracking — Singapore Strait</h3>
+    <p>
+      1-hour AIS snapshot of <strong>978 vessels</strong> across the Singapore Strait
+      AOI, H3 res-8 density grid, DBSCAN-clustered anchorages. <strong>200 anchored
+      in 8 zones</strong>; 2024 Red Sea diversion drove a <strong>+18% backlog</strong>
+      Jan-Apr (visible in the monthly bars).
+    </p>
+    <div class="pills">
+      <span class="pill">AIS</span>
+      <span class="pill">H3 res-8</span>
+      <span class="pill">DBSCAN</span>
+      <span class="pill">MarineTraffic</span>
+    </div>
+    <div class="actions">
+      <a class="btn btn-primary" href="14-ais-singapore/">Open dashboard →</a>
+      <a class="btn btn-secondary" href="https://github.com/ishunteam-png/gis-portfolio/tree/main/14-ais-singapore" title="Source on GitHub">↗</a>
+    </div>
+  </article>
+
+  <article class="card">
+    <div class="card-head">
+      <div class="card-num">PROJECT<span class="big">15</span></div>
+      <span class="badge"><span class="live-dot"></span>Live</span>
+    </div>
+    <h3>S1+S2 Crop Classification — Iowa</h3>
+    <p>
+      Random Forest on Sentinel-1 SAR (VV/VH) + Sentinel-2 monthly NDVI composites
+      over Story County, Iowa. 672 fields, 7 CDL classes. <strong>S2-only OA 86.3%</strong>
+      → <strong>S1+S2 fusion 92.7%</strong> (+6.4% uplift). Dashboard toggles between
+      truth, S1-only, S2-only, and fused predictions.
+    </p>
+    <div class="pills">
+      <span class="pill">Sentinel-1</span>
+      <span class="pill">Sentinel-2</span>
+      <span class="pill">scikit-learn</span>
+      <span class="pill">USDA CDL</span>
+    </div>
+    <div class="actions">
+      <a class="btn btn-primary" href="15-crop-classification/">Open dashboard →</a>
+      <a class="btn btn-secondary" href="https://github.com/ishunteam-png/gis-portfolio/tree/main/15-crop-classification" title="Source on GitHub">↗</a>
     </div>
   </article>
 
