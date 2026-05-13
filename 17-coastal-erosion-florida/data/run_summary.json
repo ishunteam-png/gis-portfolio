@@ -1,0 +1,21 @@
+{
+  "region": "Florida Atlantic coast",
+  "aoi_bbox": [
+    -80.65,
+    25.55,
+    -80.5,
+    29.3
+  ],
+  "years": [
+    2015,
+    2024
+  ],
+  "n_stations": 15,
+  "n_gain_stations": 4,
+  "n_loss_stations": 11,
+  "mean_rate_m_yr_all": -0.57,
+  "biggest_loser": "Daytona Beach (-27.45 m)",
+  "biggest_gainer": "Miami Beach (+24.01 m)",
+  "method": "Sentinel-2 NDWI shoreline extraction with annual perpendicular displacement at transects",
+  "data_source": "ESA Copernicus S2 L2A . FDEP transects . NOAA NHC . USACE renourishment"
+}
