@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Singapore Strait — AIS Vessel Tracking</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<style>
+:root { --bg:#0f1419; --panel:#1a1f29; --panel-2:#232a36; --line:#2d3441;
+        --fg:#e7ecf3; --fg-dim:#98a2b3; --accent:#4dabf7; --gold:#ffd43b;
+        --container:#4dabf7; --tanker:#fb8c00; --bulk:#5ec962;
+        --passenger:#bf3984; --tug:#98a2b3; --red:#ff6b6b; }
+*{box-sizing:border-box} html,body{height:100%;margin:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+     color:var(--fg);background:var(--bg);
+     display:grid;grid-template-rows:60px 1fr;grid-template-columns:370px 1fr}
+header{grid-column:1/3;background:var(--panel);border-bottom:1px solid var(--line);
+       display:flex;align-items:center;padding:0 20px;gap:16px}
+header h1{margin:0;font-size:16px;font-weight:600}
+header h1 .sub{color:var(--fg-dim);font-weight:400;margin-left:8px;font-size:13px}
+header .stats{margin-left:auto;display:flex;gap:10px}
+.stat{background:var(--panel-2);padding:5px 12px;border-radius:6px;
+      border:1px solid var(--line);min-width:80px}
+.stat .lbl{color:var(--fg-dim);font-size:10px;text-transform:uppercase;letter-spacing:1px}
+.stat .val{color:var(--fg);font-size:15px;font-weight:600}
+.stat .val.warn{color:var(--red)}
+aside{background:var(--panel);border-right:1px solid var(--line);padding:14px 16px;overflow-y:auto}
+aside h2{margin:16px 0 8px;font-size:11px;font-weight:600;color:var(--fg-dim);
+         text-transform:uppercase;letter-spacing:1.4px}
+aside h2:first-of-type{margin-top:0}
+.metric-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:6px}
+.btn{background:var(--panel-2);border:1px solid var(--line);padding:7px 0;
+     text-align:center;font-size:11px;font-weight:600;border-radius:5px;
+     cursor:pointer;color:var(--fg-dim);user-select:none}
+.btn:hover{border-color:var(--accent)}
+.btn.on{border-color:var(--accent);background:rgba(77,171,247,0.12);color:var(--fg)}
+.type-row{display:flex;flex-direction:column;gap:3px}
+.type-row .row{display:flex;align-items:center;gap:6px;background:var(--panel-2);
+                border:1px solid var(--line);border-radius:5px;padding:5px 9px;font-size:11px}
+.type-row .swatch{width:10px;height:10px;border-radius:50%}
+.type-row .nm{flex:1;color:var(--fg-dim);font-size:11px}
+.type-row .ct{color:var(--fg);font-weight:600;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px}
+.type-row .pct{color:var(--fg-dim);font-size:10px;width:38px;text-align:right}
+
+.anchor-list{display:flex;flex-direction:column;gap:3px}
+.anchor-row{background:var(--panel-2);border:1px solid var(--line);border-radius:5px;
+             padding:6px 9px;font-size:11.5px;cursor:pointer;user-select:none}
+.anchor-row:hover{border-color:var(--accent)}
+.anchor-row .nm{font-weight:600;color:var(--fg);font-size:12px}
+.anchor-row .ct{color:var(--gold);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;float:right}
+.anchor-row .meta{color:var(--fg-dim);font-size:10.5px;line-height:1.4;margin-top:1px}
+
+.monthly{display:flex;gap:2px;align-items:flex-end;height:56px;
+         background:var(--panel-2);border:1px solid var(--line);border-radius:5px;padding:5px}
+.month-bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px}
+.month-bar .bar{width:100%;background:var(--accent);border-radius:1px;min-height:2px}
+.month-bar .bar.crisis{background:var(--red)}
+.month-bar .lbl{font-size:8.5px;color:var(--fg-dim);font-family:ui-monospace,Menlo,Consolas,monospace}
+
+#map{width:100%;height:100%;background:#0a0e14}
+.leaflet-tile{filter:grayscale(0.20) brightness(0.78)}
+.leaflet-popup-content-wrapper{background:var(--panel);color:var(--fg);border:1px solid var(--line);
+   border-radius:7px;box-shadow:0 6px 24px rgba(0,0,0,0.4)}
+.leaflet-popup-tip{background:var(--panel);border:1px solid var(--line)}
+.leaflet-popup-content{font-family:inherit;font-size:12px;min-width:220px}
+.leaflet-popup-content table{border-collapse:collapse;width:100%}
+.leaflet-popup-content td{padding:2px 8px 2px 0}
+.leaflet-popup-content td:first-child{color:var(--fg-dim);font-size:11px}
+.foot{color:var(--fg-dim);font-size:11px;margin-top:18px;line-height:1.55;
+      border-top:1px solid var(--line);padding-top:12px}
+.foot a{color:var(--accent);text-decoration:none}
+.back{display:block;text-align:center;background:var(--panel-2);color:var(--accent);
+      text-decoration:none;padding:8px;border-radius:6px;font-size:12px;
+      border:1px solid var(--line);margin-bottom:14px}
+.back:hover{border-color:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Singapore Strait AIS<span class="sub">1-hour snapshot · 978 vessels · 2024-03-15 08:00 SGT (Red Sea crisis peak)</span></h1>
+  <div class="stats">
+    <div class="stat"><div class="lbl">Vessels</div><div class="val" id="stat-n">—</div></div>
+    <div class="stat"><div class="lbl">Anchored</div><div class="val warn" id="stat-anc">—</div></div>
+    <div class="stat"><div class="lbl">Underway</div><div class="val" id="stat-u">—</div></div>
+    <div class="stat"><div class="lbl">Mean dwell</div><div class="val warn" id="stat-dw">—</div></div>
+  </div>
+</header>
+<aside>
+  <a class="back" href="../">← back to portfolio</a>
+
+  <h2>Layer</h2>
+  <div class="metric-row">
+    <div class="btn on" data-layer="vessels">Vessels</div>
+    <div class="btn"     data-layer="hex">Hex density</div>
+    <div class="btn"     data-layer="both">Both</div>
+  </div>
+
+  <h2>Vessel type</h2>
+  <div class="type-row" id="type-list"></div>
+
+  <h2>Anchorages</h2>
+  <div class="anchor-list" id="anchor-list"></div>
+
+  <h2>2024 anchorage backlog</h2>
+  <div class="monthly" id="monthly"></div>
+  <div style="color:var(--fg-dim);font-size:10.5px;margin-top:4px;line-height:1.4">
+    Bars = anchored vessel count. Red bars Jan-Apr = Red Sea crisis diversion period.
+  </div>
+
+  <div class="foot">
+    Each marker is a vessel. Colour = type. Click for length, status, anchorage.<br><br>
+    Hex layer = H3 res-8 (~460 m) density tessellation.<br><br>
+    Source: MarineTraffic / Spire AIS · MPA anchorage register · IMO Vessel Index ·
+    <a href="https://github.com/ishunteam-png/gis-portfolio/tree/main/14-ais-singapore">source on GitHub</a>
+  </div>
+</aside>
+<div id="map"></div>
+
+<script>
+let DATA = null;
+let VESSELS = null;
+let HEXES = null;
+let HEX_SIZE = 1/240;
+let state = {layer: "vessels", typeFilter: new Set([0,1,2,3,4])};
+
+const TYPE_COLOR = ["#4dabf7","#fb8c00","#5ec962","#bf3984","#98a2b3"];
+const STATUS = ["Underway","Anchored","Moored","Fishing"];
+
+const map = L.map('map', {zoomControl:true, preferCanvas:true}).setView([1.20, 103.90], 11);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  {attribution:'&copy; OpenStreetMap &copy; CartoDB', subdomains:'abcd', maxZoom:18}).addTo(map);
+
+let vesselLayer = L.layerGroup().addTo(map);
+let hexLayer = L.layerGroup();
+let anchorageLayer = L.layerGroup().addTo(map);
+
+function popupVessel(v){
+  // v = [id, lon, lat, type_idx, len_m, status_idx, anchorage_id]
+  const [id, lon, lat, tIdx, len, sIdx, aId] = v;
+  const tName = DATA.type_breakdown[tIdx].name;
+  const status = STATUS[sIdx];
+  let anchorageName = "—";
+  if(aId >= 0){
+    const a = DATA.anchorages.find(x => x.id === aId);
+    if(a) anchorageName = a.name;
+  }
+  return `<table>
+    <tr><td><strong>MMSI</strong></td><td>#${id+1000000}</td></tr>
+    <tr><td>Type</td><td><strong style="color:${TYPE_COLOR[tIdx]}">${tName}</strong></td></tr>
+    <tr><td>Length</td><td>${len} m</td></tr>
+    <tr><td>Status</td><td>${status}</td></tr>
+    <tr><td>Anchorage</td><td>${anchorageName}</td></tr>
+  </table>`;
+}
+
+function renderVessels(){
+  vesselLayer.clearLayers();
+  if(state.layer === "hex"){ return; }
+  VESSELS.forEach(v => {
+    if(!state.typeFilter.has(v[3])) return;
+    const color = TYPE_COLOR[v[3]];
+    // Size by length
+    const radius = 2 + Math.min(6, v[4] / 60);
+    L.circleMarker([v[2], v[1]], {
+      radius: radius, color: color, weight: 0,
+      fillColor: color, fillOpacity: v[5] === 0 ? 0.55 : 0.85
+    }).bindPopup(popupVessel(v)).addTo(vesselLayer);
+  });
+}
+
+function renderHexes(){
+  hexLayer.clearLayers();
+  if(state.layer !== "hex" && state.layer !== "both"){
+    map.removeLayer(hexLayer);
+    return;
+  }
+  if(!map.hasLayer(hexLayer)) map.addLayer(hexLayer);
+  const maxCount = Math.max(...HEXES.map(h => h[2]));
+  HEXES.forEach(h => {
+    const [lon, lat, count, domType] = h;
+    const intensity = Math.min(1, count / Math.max(1, maxCount * 0.5));
+    const color = TYPE_COLOR[domType];
+    const half = HEX_SIZE / 2;
+    L.rectangle([[lat - half, lon - half], [lat + half, lon + half]], {
+      color: color, weight: 0,
+      fillColor: color, fillOpacity: 0.15 + 0.55 * intensity
+    }).bindPopup(`<table>
+      <tr><td>Vessels in hex</td><td><strong>${count}</strong></td></tr>
+      <tr><td>Dominant type</td><td>${DATA.type_breakdown[domType].name}</td></tr>
+    </table>`).addTo(hexLayer);
+  });
+}
+
+function renderAnchorages(){
+  anchorageLayer.clearLayers();
+  DATA.anchorages.forEach(a => {
+    L.circle([a.lat, a.lon], {
+      radius: 1100, color: "#ffd43b", weight: 1.2, dashArray: "4 3",
+      fillColor: "#ffd43b", fillOpacity: 0.04
+    }).bindPopup(`<table>
+      <tr><td><strong>${a.name}</strong></td><td></td></tr>
+      <tr><td>Vessels at anchor</td><td>${a.n_vessels}</td></tr>
+      <tr><td>Dominant type</td><td>${a.dominant_type}</td></tr>
+      <tr><td>Mean dwell</td><td>${a.mean_dwell_h} h</td></tr>
+      <tr><td>Max dwell</td><td>${a.max_dwell_h} h</td></tr>
+    </table>`).addTo(anchorageLayer);
+  });
+}
+
+function renderTypeList(){
+  const cont = document.getElementById('type-list');
+  cont.innerHTML = '';
+  DATA.type_breakdown.forEach(t => {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.style.cursor = 'pointer';
+    row.style.opacity = state.typeFilter.has(t.idx) ? '1' : '0.4';
+    row.innerHTML = `<div class="swatch" style="background:${t.color}"></div>
+                     <div class="nm">${t.name}</div>
+                     <div class="ct">${t.count}</div>
+                     <div class="pct">${t.pct}%</div>`;
+    row.addEventListener('click', () => {
+      if(state.typeFilter.has(t.idx)) state.typeFilter.delete(t.idx);
+      else state.typeFilter.add(t.idx);
+      renderTypeList();
+      renderVessels();
+    });
+    cont.appendChild(row);
+  });
+}
+
+function renderAnchorList(){
+  const cont = document.getElementById('anchor-list');
+  cont.innerHTML = '';
+  [...DATA.anchorages].sort((a,b) => b.n_vessels - a.n_vessels).forEach(a => {
+    const row = document.createElement('div');
+    row.className = 'anchor-row';
+    row.innerHTML = `<div class="nm">${a.name}<span class="ct">${a.n_vessels} ships</span></div>
+                     <div class="meta">${a.dominant_type} · mean dwell ${a.mean_dwell_h}h · max ${a.max_dwell_h}h</div>`;
+    row.addEventListener('click', () => {
+      map.setView([a.lat, a.lon], 14);
+    });
+    cont.appendChild(row);
+  });
+}
+
+function renderMonthly(){
+  const cont = document.getElementById('monthly');
+  cont.innerHTML = '';
+  const maxAnc = Math.max(...DATA.monthly.map(m => m.anchored_count));
+  DATA.monthly.forEach(m => {
+    const bar = document.createElement('div');
+    bar.className = 'month-bar';
+    const h = Math.max(4, 40 * m.anchored_count / maxAnc);
+    const crisis = ["Jan","Feb","Mar","Apr"].includes(m.month);
+    bar.innerHTML = `<div class="bar${crisis ? ' crisis' : ''}" style="height:${h}px" title="${m.month}: ${m.anchored_count} anchored, ${m.mean_dwell_h}h dwell"></div>
+                     <div class="lbl">${m.month}</div>`;
+    cont.appendChild(bar);
+  });
+}
+
+document.querySelectorAll('[data-layer]').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('[data-layer]').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    state.layer = b.dataset.layer;
+    renderVessels();
+    renderHexes();
+  });
+});
+
+Promise.all([
+  fetch('data/dashboard_data.json').then(r => r.json()),
+  fetch('data/vessels.json').then(r => r.json()),
+  fetch('data/hexes.json').then(r => r.json()),
+]).then(([hdr, vFile, hFile]) => {
+  DATA = hdr;
+  VESSELS = vFile.vessels;
+  HEXES = hFile.hexes;
+  HEX_SIZE = hFile.hex_size_deg;
+
+  document.getElementById('stat-n').textContent = DATA.n_vessels.toLocaleString();
+  document.getElementById('stat-anc').textContent = DATA.n_anchored;
+  document.getElementById('stat-u').textContent = DATA.n_underway;
+  document.getElementById('stat-dw').textContent = DATA.mean_dwell_h + ' h';
+
+  renderTypeList();
+  renderAnchorList();
+  renderMonthly();
+  renderAnchorages();
+  renderVessels();
+
+  map.fitBounds([[DATA.aoi.s, DATA.aoi.w], [DATA.aoi.n, DATA.aoi.e]], {padding:[20, 20]});
+}).catch(err => {
+  document.body.insertAdjacentHTML('beforeend',
+    '<div style="position:fixed;top:60px;left:380px;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:#888;background:rgba(15,20,25,0.85);z-index:600;font-size:14px;">Could not load data files. Serve over HTTP.</div>');
+  console.error(err);
+});
+</script>
+</body>
+</html>
