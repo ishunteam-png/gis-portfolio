@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tbilisi CVRP-TW — Algorithm Comparison Dashboard</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<style>
+:root {
+  --bg:#0f1419; --panel:#1a1f29; --panel-2:#232a36;
+  --line:#2d3441; --fg:#e7ecf3; --fg-dim:#98a2b3;
+  --accent:#4dabf7;
+  --greedy:#fa5252; --savings:#fab005; --ortools:#51cf66;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+     color:var(--fg);background:var(--bg);
+     display:grid;grid-template-rows:60px 1fr;grid-template-columns:330px 1fr}
+header{grid-column:1/3;background:var(--panel);border-bottom:1px solid var(--line);
+       display:flex;align-items:center;padding:0 20px;gap:16px}
+header h1{margin:0;font-size:16px;font-weight:600}
+header h1 .sub{color:var(--fg-dim);font-weight:400;margin-left:8px;font-size:13px}
+header .stats{margin-left:auto;display:flex;gap:10px}
+.stat{background:var(--panel-2);padding:5px 12px;border-radius:6px;border:1px solid var(--line);min-width:80px}
+.stat .lbl{color:var(--fg-dim);font-size:10px;text-transform:uppercase;letter-spacing:1px}
+.stat .val{color:var(--fg);font-size:15px;font-weight:600}
+aside{background:var(--panel);border-right:1px solid var(--line);padding:14px 16px;overflow-y:auto}
+aside h2{margin:16px 0 8px;font-size:11px;font-weight:600;color:var(--fg-dim);
+         text-transform:uppercase;letter-spacing:1.4px}
+aside h2:first-of-type{margin-top:0}
+.algo-btn{display:flex;align-items:center;justify-content:space-between;
+          background:var(--panel-2);border:1px solid var(--line);border-radius:6px;
+          padding:9px 11px;cursor:pointer;margin-bottom:6px;
+          font-size:13px;user-select:none}
+.algo-btn:hover{border-color:var(--accent)}
+.algo-btn.active{border-color:var(--accent);background:rgba(77,171,247,0.10)}
+.algo-btn .swatch{width:14px;height:14px;border-radius:3px}
+.algo-btn .name{flex:1;margin-left:10px;font-weight:600}
+.algo-btn .meta{color:var(--fg-dim);font-size:11px}
+.compare-tbl{width:100%;font-size:12px;border-collapse:collapse;margin-top:6px}
+.compare-tbl th,.compare-tbl td{padding:5px 7px;text-align:left;border-bottom:1px solid var(--line)}
+.compare-tbl th{color:var(--fg-dim);font-weight:500;font-size:11px;text-transform:uppercase}
+.compare-tbl .best{color:var(--ortools);font-weight:600}
+.compare-tbl .worst{color:var(--greedy)}
+#map{width:100%;height:100%;background:#0a0e14}
+.leaflet-tile{filter:grayscale(0.15) brightness(0.85)}
+.leaflet-popup-content-wrapper{background:var(--panel);color:var(--fg);border:1px solid var(--line);
+   border-radius:7px;box-shadow:0 6px 24px rgba(0,0,0,0.4)}
+.leaflet-popup-tip{background:var(--panel);border:1px solid var(--line)}
+.leaflet-popup-content{font-family:inherit;font-size:12px}
+.leaflet-popup-content table{border-collapse:collapse}
+.leaflet-popup-content td{padding:2px 8px 2px 0}
+.leaflet-popup-content td:first-child{color:var(--fg-dim)}
+.foot{color:var(--fg-dim);font-size:11px;margin-top:18px;line-height:1.55;
+      border-top:1px solid var(--line);padding-top:12px}
+.foot strong{color:var(--fg)}
+.back{display:block;text-align:center;background:var(--panel-2);color:var(--accent);
+      text-decoration:none;padding:8px;border-radius:6px;font-size:12px;
+      border:1px solid var(--line);margin-bottom:14px}
+.back:hover{border-color:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Tbilisi CVRP-TW<span class="sub">60 stops · 5 vehicles · capacity 20 · 3 time windows · service 180 s</span></h1>
+  <div class="stats">
+    <div class="stat"><div class="lbl">Algorithm</div><div class="val" id="stat-algo">OR-Tools</div></div>
+    <div class="stat"><div class="lbl">Total time</div><div class="val" id="stat-total">—</div></div>
+    <div class="stat"><div class="lbl">Max route</div><div class="val" id="stat-max">—</div></div>
+  </div>
+</header>
+<aside>
+  <a class="back" href="../">← back to portfolio</a>
+
+  <h2>Algorithm</h2>
+  <div id="algo-greedy" class="algo-btn" data-algo="greedy">
+    <span class="swatch" style="background:var(--greedy)"></span>
+    <span class="name">Nearest-neighbour</span>
+    <span class="meta">346.7 min</span>
+  </div>
+  <div id="algo-savings" class="algo-btn" data-algo="savings">
+    <span class="swatch" style="background:var(--savings)"></span>
+    <span class="name">Clarke-Wright (1964)</span>
+    <span class="meta">275.4 min</span>
+  </div>
+  <div id="algo-ortools" class="algo-btn active" data-algo="ortools">
+    <span class="swatch" style="background:var(--ortools)"></span>
+    <span class="name">OR-Tools GLS</span>
+    <span class="meta">276.3 min</span>
+  </div>
+
+  <h2>Side-by-side comparison</h2>
+  <table class="compare-tbl">
+    <thead><tr><th></th><th>Total</th><th>Max</th></tr></thead>
+    <tbody>
+      <tr><td>Nearest-neighbour</td><td class="worst">346.7</td><td>87.5</td></tr>
+      <tr><td>Clarke-Wright</td><td>275.4</td><td>77.1</td></tr>
+      <tr><td>OR-Tools (5 s GLS)</td><td>276.3</td><td class="best">75.0</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Stop legend</h2>
+  <div style="font-size:12px;color:var(--fg-dim);line-height:1.7">
+    <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#74c0fc;margin-right:6px"></span>Morning (08:00–09:30)<br>
+    <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ffd43b;margin-right:6px"></span>Midday (11:00–12:30)<br>
+    <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff8787;margin-right:6px"></span>Afternoon (15:00–16:30)<br>
+    <span style="display:inline-block;width:14px;height:14px;background:#ffd43b;border:2px solid #fff;margin-right:6px;border-radius:2px"></span>Depot
+  </div>
+
+  <div class="foot">
+    Three algorithms on the <strong>same</strong> 60-stop / 5-vehicle problem.
+    Distance matrix is shortest-path travel time on the Tbilisi drive graph
+    (2,694 nodes, 6,097 edges). Service time 180 s per stop, hard time windows.<br><br>
+    OR-Tools ran 5 s with <strong>Guided Local Search</strong>. The greedy baseline is what most
+    people would call "common-sense routing"; Clarke-Wright is the 1964 algorithm that's still
+    competitive against modern solvers; OR-Tools wins on max-route time (the dimension that matters
+    if drivers get paid by the hour or have their own time window).
+  </div>
+</aside>
+<div id="map"></div>
+
+<script>
+const RESULTS = {
+  greedy:  {total: 346.72, max: 87.47, color: getComputedStyle(document.documentElement).getPropertyValue('--greedy').trim()},
+  savings: {total: 275.42, max: 77.05, color: getComputedStyle(document.documentElement).getPropertyValue('--savings').trim()},
+  ortools: {total: 276.27, max: 74.97, color: getComputedStyle(document.documentElement).getPropertyValue('--ortools').trim()}
+};
+const ALGO_LABEL = {greedy: 'Nearest-nbr', savings: 'Clarke-Wright', ortools: 'OR-Tools'};
+const WIN_COLOR = {M: '#74c0fc', m: '#ffd43b', A: '#ff8787'};
+const WIN_LABEL = {M: 'morning', m: 'midday', A: 'afternoon'};
+
+let STOPS = null;
+const ROUTES = {greedy: null, savings: null, ortools: null};
+let activeAlgo = 'ortools';
+
+const map = L.map('map', {zoomControl:true, preferCanvas:true}).setView([41.715, 44.79], 13);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  {attribution:'&copy; OpenStreetMap &copy; CartoDB', subdomains:'abcd', maxZoom:19}).addTo(map);
+
+let stopLayer = L.layerGroup().addTo(map);
+let routeLayer = L.layerGroup().addTo(map);
+
+function renderStops(){
+  if(!STOPS) return;
+  stopLayer.clearLayers();
+  STOPS.features.forEach(f => {
+    const c = f.geometry.coordinates;
+    const p = f.properties;
+    L.circleMarker([c[1], c[0]], {
+      radius: 5, color: '#222', weight: 1,
+      fillColor: WIN_COLOR[p.win], fillOpacity: 0.95
+    }).bindPopup(`<table>
+      <tr><td>Stop #${p.id}</td><td><strong>${p.name}</strong></td></tr>
+      <tr><td>Demand</td><td>${p.demand}</td></tr>
+      <tr><td>Window</td><td>${WIN_LABEL[p.win]}</td></tr>
+    </table>`).addTo(stopLayer);
+  });
+  L.marker([41.6934, 44.8014], {icon: L.divIcon({
+    className:'',
+    html:`<div style="width:18px;height:18px;background:#ffd43b;border:3px solid #fff;border-radius:3px;box-shadow:0 2px 6px rgba(0,0,0,0.5)"></div>`,
+    iconSize:[18,18], iconAnchor:[9,9]
+  })}).bindPopup('<strong>Depot</strong><br>Vehicles start and end here').addTo(stopLayer);
+}
+
+function renderRoutes(){
+  routeLayer.clearLayers();
+  const data = ROUTES[activeAlgo];
+  if(!data) return;
+  const color = RESULTS[activeAlgo].color;
+  data.features.forEach(f => {
+    const coords = f.geometry.coordinates.map(c => [c[1], c[0]]);
+    L.polyline(coords, {
+      color: color, weight: 3, opacity: 0.85
+    }).bindPopup(`<table>
+      <tr><td>Algorithm</td><td><strong>${ALGO_LABEL[activeAlgo]}</strong></td></tr>
+      <tr><td>Vehicle</td><td>#${f.properties.vehicle}</td></tr>
+      <tr><td>Stops</td><td>${f.properties.n_stops}</td></tr>
+      <tr><td>Travel time</td><td>${f.properties.travel_time_min.toFixed(1)} min</td></tr>
+    </table>`).addTo(routeLayer);
+  });
+  document.getElementById('stat-algo').textContent = ALGO_LABEL[activeAlgo];
+  document.getElementById('stat-total').textContent = RESULTS[activeAlgo].total.toFixed(1) + ' min';
+  document.getElementById('stat-max').textContent = RESULTS[activeAlgo].max.toFixed(1) + ' min';
+}
+
+document.querySelectorAll('.algo-btn').forEach(btn => {
+  btn.addEventListener('click', e => {
+    document.querySelectorAll('.algo-btn').forEach(b => b.classList.remove('active'));
+    e.currentTarget.classList.add('active');
+    activeAlgo = e.currentTarget.dataset.algo;
+    renderRoutes();
+  });
+});
+
+Promise.all([
+  fetch('dashboard_stops.json').then(r=>r.json()),
+  fetch('dashboard_route_greedy.json').then(r=>r.json()),
+  fetch('dashboard_route_savings.json').then(r=>r.json()),
+  fetch('dashboard_route_ortools.json').then(r=>r.json())
+]).then(([s, g, sv, o]) => {
+  STOPS = s; ROUTES.greedy = g; ROUTES.savings = sv; ROUTES.ortools = o;
+  renderStops();
+  renderRoutes();
+  const bb = L.latLngBounds(STOPS.features.map(f => [f.geometry.coordinates[1], f.geometry.coordinates[0]]));
+  map.fitBounds(bb, {padding:[40,40]});
+}).catch(err => {
+  document.body.insertAdjacentHTML('beforeend',
+    '<div style="position:fixed;top:60px;left:340px;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:#888;background:rgba(15,20,25,0.85);z-index:600;font-size:14px;">Could not load dashboard data. Serve over HTTP.</div>');
+  console.error(err);
+});
+</script>
+</body>
+</html>
