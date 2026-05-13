@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lisbon Rooftop Solar Potential</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<style>
+:root { --bg:#0f1419; --panel:#1a1f29; --panel-2:#232a36; --line:#2d3441;
+        --fg:#e7ecf3; --fg-dim:#98a2b3; --accent:#4dabf7; --gold:#ffd43b; --orange:#fb8c00; --red:#ff6b6b; }
+*{box-sizing:border-box} html,body{height:100%;margin:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+     color:var(--fg);background:var(--bg);
+     display:grid;grid-template-rows:60px 1fr;grid-template-columns:360px 1fr}
+header{grid-column:1/3;background:var(--panel);border-bottom:1px solid var(--line);
+       display:flex;align-items:center;padding:0 20px;gap:16px}
+header h1{margin:0;font-size:16px;font-weight:600}
+header h1 .sub{color:var(--fg-dim);font-weight:400;margin-left:8px;font-size:13px}
+header .stats{margin-left:auto;display:flex;gap:10px}
+.stat{background:var(--panel-2);padding:5px 12px;border-radius:6px;
+      border:1px solid var(--line);min-width:90px}
+.stat .lbl{color:var(--fg-dim);font-size:10px;text-transform:uppercase;letter-spacing:1px}
+.stat .val{color:var(--fg);font-size:15px;font-weight:600}
+.stat .val.sun{color:var(--gold)}
+aside{background:var(--panel);border-right:1px solid var(--line);padding:14px 16px;overflow-y:auto}
+aside h2{margin:16px 0 8px;font-size:11px;font-weight:600;color:var(--fg-dim);
+         text-transform:uppercase;letter-spacing:1.4px}
+aside h2:first-of-type{margin-top:0}
+.metric-row{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:6px}
+.btn{background:var(--panel-2);border:1px solid var(--line);padding:7px 0;
+     text-align:center;font-size:11px;font-weight:600;border-radius:5px;
+     cursor:pointer;color:var(--fg-dim);user-select:none}
+.btn:hover{border-color:var(--accent)}
+.btn.on{border-color:var(--accent);background:rgba(77,171,247,0.12);color:var(--fg)}
+.legend{background:var(--panel-2);border:1px solid var(--line);padding:10px;border-radius:6px}
+.legend .bar{display:flex;height:14px;border-radius:3px;overflow:hidden;margin-bottom:6px}
+.legend .bar span{flex:1}
+.legend .ticks{display:flex;justify-content:space-between;font-size:10px;
+              color:var(--fg-dim);font-family:ui-monospace,Menlo,Consolas,monospace}
+.nb-list{display:flex;flex-direction:column;gap:3px}
+.nb-row{background:var(--panel-2);border:1px solid var(--line);border-radius:5px;
+         padding:7px 10px;font-size:11.5px;cursor:pointer;user-select:none}
+.nb-row:hover{border-color:var(--accent)}
+.nb-row .nm{font-weight:600;color:var(--fg);font-size:12px;margin-bottom:2px}
+.nb-row .mwh{color:var(--gold);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;float:right}
+.nb-row .story{color:var(--fg-dim);font-size:10.5px;line-height:1.4}
+.top10{display:flex;flex-direction:column;gap:2px}
+.top10 .row{display:flex;align-items:center;gap:6px;background:var(--panel-2);
+            border:1px solid var(--line);border-radius:4px;padding:4px 8px;
+            font-size:11px;cursor:pointer}
+.top10 .row:hover{border-color:var(--accent)}
+.top10 .row .rank{color:var(--fg-dim);width:18px;font-family:ui-monospace,Menlo,Consolas,monospace;text-align:right;font-size:10px}
+.top10 .row .lbl{flex:1;font-size:10.5px;color:var(--fg-dim)}
+.top10 .row .val{color:var(--gold);font-weight:600;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10.5px}
+#map{width:100%;height:100%;background:#0a0e14}
+.leaflet-tile{filter:grayscale(0.20) brightness(0.78)}
+.leaflet-popup-content-wrapper{background:var(--panel);color:var(--fg);border:1px solid var(--line);
+   border-radius:7px;box-shadow:0 6px 24px rgba(0,0,0,0.4)}
+.leaflet-popup-tip{background:var(--panel);border:1px solid var(--line)}
+.leaflet-popup-content{font-family:inherit;font-size:12px;min-width:220px}
+.leaflet-popup-content table{border-collapse:collapse;width:100%}
+.leaflet-popup-content td{padding:2px 8px 2px 0}
+.leaflet-popup-content td:first-child{color:var(--fg-dim);font-size:11px}
+.foot{color:var(--fg-dim);font-size:11px;margin-top:18px;line-height:1.55;
+      border-top:1px solid var(--line);padding-top:12px}
+.foot a{color:var(--accent);text-decoration:none}
+.back{display:block;text-align:center;background:var(--panel-2);color:var(--accent);
+      text-decoration:none;padding:8px;border-radius:6px;font-size:12px;
+      border:1px solid var(--line);margin-bottom:14px}
+.back:hover{border-color:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Lisbon Rooftop Solar<span class="sub">OSM buildings × Copernicus DEM × pvlib · 450 buildings · 5 neighbourhoods</span></h1>
+  <div class="stats">
+    <div class="stat"><div class="lbl">Buildings</div><div class="val" id="stat-n">450</div></div>
+    <div class="stat"><div class="lbl">Total / year</div><div class="val sun" id="stat-mwh">—</div></div>
+    <div class="stat"><div class="lbl">PT homes ≡</div><div class="val sun" id="stat-homes">—</div></div>
+    <div class="stat"><div class="lbl">Avg kWh/m²</div><div class="val" id="stat-avg">—</div></div>
+  </div>
+</header>
+<aside>
+  <a class="back" href="../">← back to portfolio</a>
+
+  <h2>Map colour</h2>
+  <div class="metric-row">
+    <div class="btn on" data-metric="annual_kwh">Annual kWh</div>
+    <div class="btn"     data-metric="kwh_per_m2">kWh per m²</div>
+  </div>
+
+  <h2>Legend</h2>
+  <div class="legend">
+    <div class="bar" id="legend-bar"></div>
+    <div class="ticks" id="legend-ticks"></div>
+  </div>
+
+  <h2>Neighbourhoods</h2>
+  <div class="nb-list" id="nb-list"></div>
+
+  <h2>Top 10 buildings</h2>
+  <div class="top10" id="top10"></div>
+
+  <div class="foot">
+    Each marker is one building. Bigger marker = higher annual generation.
+    Click a marker for tilt, azimuth, obstruction, and kWh breakdown.<br><br>
+    Assumes 20% mono-Si modules @ 0.83 performance ratio, 75% usable roof
+    area after parapet/vent margins.<br><br>
+    Source: OpenStreetMap · Copernicus 25 m DEM · pvlib · PVGIS Lisbon ·
+    <a href="https://github.com/ishunteam-png/gis-portfolio/tree/main/12-solar-lisbon">source on GitHub</a>
+  </div>
+</aside>
+<div id="map"></div>
+
+<script>
+let DATA = null;
+let BUILDINGS = null;
+let state = {metric: "annual_kwh"};
+
+const PALETTE = ["#1976d2","#21908c","#5ec962","#fde725","#fb8c00","#e64a19","#bf3984"];
+
+const map = L.map('map', {zoomControl:true, preferCanvas:true}).setView([38.725, -9.15], 13);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  {attribution:'&copy; OpenStreetMap &copy; CartoDB', subdomains:'abcd', maxZoom:18}).addTo(map);
+
+let buildingLayer = L.layerGroup().addTo(map);
+
+function lerpHex(c1, c2, t){
+  const p = (s) => parseInt(s.slice(1), 16);
+  const a = p(c1), b = p(c2);
+  const ar=(a>>16)&0xff, ag=(a>>8)&0xff, ab=a&0xff;
+  const br=(b>>16)&0xff, bg=(b>>8)&0xff, bb=b&0xff;
+  return `rgb(${Math.round(ar+(br-ar)*t)},${Math.round(ag+(bg-ag)*t)},${Math.round(ab+(bb-ab)*t)})`;
+}
+
+function colorFor(value, vmin, vmax){
+  const t = Math.min(1, Math.max(0, (value - vmin) / (vmax - vmin)));
+  const i = t * (PALETTE.length - 1);
+  const lo = Math.floor(i), hi = Math.min(PALETTE.length-1, Math.ceil(i));
+  return lerpHex(PALETTE[lo], PALETTE[hi], i - lo);
+}
+
+function metricValue(b){
+  // b = [i, lon, lat, nb_idx, roof_m2, tilt, azimuth, obstruction_pct, annual_kwh, kwh_per_m2_x10]
+  if(state.metric === "kwh_per_m2") return b[9] / 10;
+  return b[8];
+}
+
+function popupBuilding(b){
+  const [i, lon, lat, nbIdx, roof, tilt, az, obs, kwh, kwh_m2_10] = b;
+  const nb = DATA.neighbourhoods[nbIdx].name;
+  return `<table>
+    <tr><td><strong>Building</strong></td><td>#${i+1} · ${nb}</td></tr>
+    <tr><td>Annual generation</td><td><strong style="color:#ffd43b">${kwh.toLocaleString()} kWh/yr</strong></td></tr>
+    <tr><td>Roof area</td><td>${roof} m²</td></tr>
+    <tr><td>kWh per m²</td><td>${(kwh_m2_10/10).toFixed(1)} kWh/m²/yr</td></tr>
+    <tr><td>Roof tilt</td><td>${tilt}°</td></tr>
+    <tr><td>Azimuth</td><td>${az}° (${compass(az)})</td></tr>
+    <tr><td>Obstruction</td><td>${obs}%</td></tr>
+    <tr><td colspan="2" style="font-size:11px;color:var(--fg-dim);border-top:1px solid var(--line);padding-top:3px">
+      ≡ ${Math.round(kwh / 3000 * 10) / 10} PT households/yr
+    </td></tr>
+  </table>`;
+}
+
+function compass(deg){
+  const dirs = ["N","NE","E","SE","S","SW","W","NW"];
+  return dirs[Math.round(((deg % 360) / 45)) % 8];
+}
+
+function rebuild(){
+  if(!DATA || !BUILDINGS) return;
+  buildingLayer.clearLayers();
+  const vals = BUILDINGS.map(metricValue);
+  const vmin = Math.min(...vals);
+  const vmax = Math.max(...vals);
+  BUILDINGS.forEach(b => {
+    const v = metricValue(b);
+    const c = colorFor(v, vmin, vmax);
+    const radius = 4 + (v - vmin) / (vmax - vmin) * 7;
+    L.circleMarker([b[2], b[1]], {
+      radius: radius, color: c, weight: 1, fillColor: c, fillOpacity: 0.78
+    }).bindPopup(popupBuilding(b)).addTo(buildingLayer);
+  });
+  renderLegend(vmin, vmax);
+  renderTop10();
+  // Header stats
+  document.getElementById('stat-mwh').textContent = (DATA.total_annual_mwh / 1000).toFixed(1) + ' GWh';
+  document.getElementById('stat-homes').textContent = DATA.equiv_homes_pt.toLocaleString();
+  document.getElementById('stat-avg').textContent = DATA.avg_kwh_per_m2.toFixed(0);
+}
+
+function renderLegend(vmin, vmax){
+  const bar = document.getElementById('legend-bar');
+  bar.innerHTML = PALETTE.map(c => `<span style="background:${c}"></span>`).join('');
+  const ticks = document.getElementById('legend-ticks');
+  const fmt = (v) => state.metric === "kwh_per_m2" ? v.toFixed(0) : (v / 1000).toFixed(0) + 'k';
+  ticks.innerHTML = `<span>${fmt(vmin)}</span><span>${fmt((vmin + vmax) / 2)}</span><span>${fmt(vmax)}</span>`;
+}
+
+function renderTop10(){
+  const ranked = [...BUILDINGS].sort((a, b) => metricValue(b) - metricValue(a)).slice(0, 10);
+  const cont = document.getElementById('top10');
+  cont.innerHTML = '';
+  const unit = state.metric === "kwh_per_m2" ? 'kWh/m²' : 'kWh/yr';
+  ranked.forEach((b, idx) => {
+    const v = metricValue(b);
+    const nb = DATA.neighbourhoods[b[3]].name.split(' ')[0];
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `<div class="rank">${idx + 1}</div>
+                     <div class="lbl">#${b[0]+1} · ${nb}</div>
+                     <div class="val">${v.toLocaleString()} ${unit}</div>`;
+    row.addEventListener('click', () => {
+      map.setView([b[2], b[1]], 17);
+      L.popup({offset: [0, -10]}).setLatLng([b[2], b[1]])
+        .setContent(popupBuilding(b)).openOn(map);
+    });
+    cont.appendChild(row);
+  });
+}
+
+function renderNbList(){
+  const cont = document.getElementById('nb-list');
+  cont.innerHTML = '';
+  DATA.neighbourhoods.forEach((nb, k) => {
+    const row = document.createElement('div');
+    row.className = 'nb-row';
+    row.innerHTML = `<div class="nm">${nb.name}<span class="mwh">${(nb.total_kwh/1000).toFixed(0)} MWh</span></div>
+                     <div class="story">${nb.n_buildings} bldgs · avg ${nb.avg_kwh_per_m2.toFixed(0)} kWh/m² · ${nb.story}</div>`;
+    row.addEventListener('click', () => {
+      map.setView([nb.lat, nb.lon], 15);
+    });
+    cont.appendChild(row);
+  });
+}
+
+document.querySelectorAll('[data-metric]').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('[data-metric]').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    state.metric = b.dataset.metric;
+    rebuild();
+  });
+});
+
+Promise.all([
+  fetch('data/dashboard_data.json').then(r => r.json()),
+  fetch('data/buildings.json').then(r => r.json()),
+]).then(([hdr, bFile]) => {
+  DATA = hdr;
+  BUILDINGS = bFile.buildings;
+  renderNbList();
+  rebuild();
+  map.fitBounds([[DATA.aoi.s, DATA.aoi.w], [DATA.aoi.n, DATA.aoi.e]], {padding:[20, 20]});
+}).catch(err => {
+  document.body.insertAdjacentHTML('beforeend',
+    '<div style="position:fixed;top:60px;left:380px;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:#888;background:rgba(15,20,25,0.85);z-index:600;font-size:14px;">Could not load data files. Serve over HTTP.</div>');
+  console.error(err);
+});
+</script>
+</body>
+</html>
