@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Florida Atlantic Coastal Erosion 2015–2024</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<style>
+:root { --bg:#0f1419; --panel:#1a1f29; --panel-2:#232a36; --line:#2d3441;
+        --fg:#e7ecf3; --fg-dim:#98a2b3; --accent:#4dabf7; --gold:#ffd43b;
+        --loss:#e64a19; --gain:#21908c; --red:#ff6b6b; }
+*{box-sizing:border-box} html,body{height:100%;margin:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+     color:var(--fg);background:var(--bg);
+     display:grid;grid-template-rows:60px 1fr;grid-template-columns:380px 1fr}
+header{grid-column:1/3;background:var(--panel);border-bottom:1px solid var(--line);
+       display:flex;align-items:center;padding:0 20px;gap:16px}
+header h1{margin:0;font-size:16px;font-weight:600}
+header h1 .sub{color:var(--fg-dim);font-weight:400;margin-left:8px;font-size:13px}
+header .stats{margin-left:auto;display:flex;gap:10px}
+.stat{background:var(--panel-2);padding:5px 12px;border-radius:6px;
+      border:1px solid var(--line);min-width:84px}
+.stat .lbl{color:var(--fg-dim);font-size:10px;text-transform:uppercase;letter-spacing:1px}
+.stat .val{color:var(--fg);font-size:15px;font-weight:600}
+.stat .val.gain{color:var(--gain)}
+.stat .val.loss{color:var(--loss)}
+aside{background:var(--panel);border-right:1px solid var(--line);padding:14px 16px;overflow-y:auto}
+aside h2{margin:16px 0 8px;font-size:11px;font-weight:600;color:var(--fg-dim);
+         text-transform:uppercase;letter-spacing:1.4px}
+aside h2:first-of-type{margin-top:0}
+
+.slider-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.slider-row input{flex:1}
+.slider-row .y{color:var(--fg);font-weight:600;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;min-width:36px;text-align:right}
+
+.legend{background:var(--panel-2);border:1px solid var(--line);padding:10px;border-radius:6px}
+.legend .bar{display:flex;height:14px;border-radius:3px;overflow:hidden;margin-bottom:6px}
+.legend .bar span{flex:1}
+.legend .ticks{display:flex;justify-content:space-between;font-size:10px;
+              color:var(--fg-dim);font-family:ui-monospace,Menlo,Consolas,monospace}
+
+.station-list{display:flex;flex-direction:column;gap:2px;max-height:260px;overflow-y:auto}
+.station-row{display:flex;align-items:center;gap:8px;background:var(--panel-2);
+              border:1px solid var(--line);border-radius:4px;padding:5px 9px;
+              font-size:11px;cursor:pointer}
+.station-row:hover{border-color:var(--accent)}
+.station-row .nm{flex:1;color:var(--fg-dim);font-size:11px}
+.station-row .v{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:600;font-size:11px;min-width:50px;text-align:right}
+.station-row .v.loss{color:var(--loss)}
+.station-row .v.gain{color:var(--gain)}
+.station-row .tag{font-size:9px;color:var(--gain);background:rgba(33,144,140,0.15);padding:1px 5px;border-radius:3px;border:1px solid rgba(33,144,140,0.3)}
+
+.events{font-size:11px;color:var(--fg-dim);line-height:1.5}
+.events div{padding:2px 0}
+.events .y{color:var(--red);font-family:ui-monospace,Menlo,Consolas,monospace;display:inline-block;width:38px}
+
+#map{width:100%;height:100%;background:#0a0e14}
+.leaflet-tile{filter:grayscale(0.20) brightness(0.78)}
+.leaflet-popup-content-wrapper{background:var(--panel);color:var(--fg);border:1px solid var(--line);
+   border-radius:7px;box-shadow:0 6px 24px rgba(0,0,0,0.4)}
+.leaflet-popup-tip{background:var(--panel);border:1px solid var(--line)}
+.leaflet-popup-content{font-family:inherit;font-size:12px;min-width:260px}
+.leaflet-popup-content table{border-collapse:collapse;width:100%}
+.leaflet-popup-content td{padding:2px 8px 2px 0}
+.leaflet-popup-content td:first-child{color:var(--fg-dim);font-size:11px}
+.popup-chart{margin-top:6px;border-top:1px solid var(--line);padding-top:6px}
+.popup-chart canvas{width:240px;height:80px;display:block}
+.foot{color:var(--fg-dim);font-size:11px;margin-top:18px;line-height:1.55;
+      border-top:1px solid var(--line);padding-top:12px}
+.foot a{color:var(--accent);text-decoration:none}
+.back{display:block;text-align:center;background:var(--panel-2);color:var(--accent);
+      text-decoration:none;padding:8px;border-radius:6px;font-size:12px;
+      border:1px solid var(--line);margin-bottom:14px}
+.back:hover{border-color:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Florida Atlantic Coastal Erosion<span class="sub">Sentinel-2 NDWI shoreline migration 2015–2024 · 15 stations · 400 km of coast</span></h1>
+  <div class="stats">
+    <div class="stat"><div class="lbl">Stations</div><div class="val" id="stat-n">15</div></div>
+    <div class="stat"><div class="lbl">Mean rate</div><div class="val loss" id="stat-rate">—</div></div>
+    <div class="stat"><div class="lbl">Worst loss</div><div class="val loss" id="stat-loss">—</div></div>
+    <div class="stat"><div class="lbl">Top gain</div><div class="val gain" id="stat-gain">—</div></div>
+  </div>
+</header>
+<aside>
+  <a class="back" href="../">← back to portfolio</a>
+
+  <h2>Year</h2>
+  <div class="slider-row">
+    <input type="range" id="year-slider" min="2015" max="2024" value="2024" step="1" />
+    <div class="y" id="year-label">2024</div>
+  </div>
+  <div style="color:var(--fg-dim);font-size:10.5px;margin-bottom:4px;line-height:1.5">
+    Each marker = cumulative shoreline migration vs the 2015 baseline,
+    measured to the chosen year.
+  </div>
+
+  <h2>Legend (m, vs 2015)</h2>
+  <div class="legend">
+    <div class="bar" id="legend-bar"></div>
+    <div class="ticks" id="legend-ticks"></div>
+  </div>
+
+  <h2>Stations (ranked)</h2>
+  <div class="station-list" id="station-list"></div>
+
+  <h2>Episodic events</h2>
+  <div class="events" id="event-list"></div>
+
+  <div class="foot">
+    Click a station for its full 10-year time-series chart.<br><br>
+    Coast-line dots between stations are interpolated for visual continuity;
+    only the named stations have measurements.<br><br>
+    Source: ESA Copernicus Sentinel-2 L2A · FDEP transects · NOAA HURDAT2 · USACE renourishment ·
+    <a href="https://github.com/ishunteam-png/gis-portfolio/tree/main/17-coastal-erosion-florida">source on GitHub</a>
+  </div>
+</aside>
+<div id="map"></div>
+
+<script>
+let DATA = null;
+let state = {year: 2024};
+
+const PAL = ["#a01619","#e64a19","#fb8c00","#fde725","#5ec962","#21908c","#1976d2"];
+
+const map = L.map('map', {zoomControl:true, preferCanvas:true}).setView([27.4, -80.3], 7);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  {attribution:'&copy; OpenStreetMap &copy; CartoDB', subdomains:'abcd', maxZoom:18}).addTo(map);
+
+let stationLayer = L.layerGroup().addTo(map);
+let segmentLayer = L.layerGroup().addTo(map);
+
+function lerpHex(c1, c2, t){
+  const p = (s) => parseInt(s.slice(1), 16);
+  const a = p(c1), b = p(c2);
+  const ar=(a>>16)&0xff, ag=(a>>8)&0xff, ab=a&0xff;
+  const br=(b>>16)&0xff, bg=(b>>8)&0xff, bb=b&0xff;
+  return `rgb(${Math.round(ar+(br-ar)*t)},${Math.round(ag+(bg-ag)*t)},${Math.round(ab+(bb-ab)*t)})`;
+}
+
+function colorForChange(v, vmin, vmax){
+  const t = Math.min(1, Math.max(0, (v - vmin) / (vmax - vmin)));
+  const i = t * (PAL.length - 1);
+  const lo = Math.floor(i), hi = Math.min(PAL.length-1, Math.ceil(i));
+  return lerpHex(PAL[lo], PAL[hi], i - lo);
+}
+
+function cumulativeAtYear(station, year){
+  const idx = year - 2015 + 1;
+  return station.cumulative_m[idx];
+}
+
+function renderSparkChart(canvas, station){
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth || 240, h = canvas.clientHeight || 80;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, w, h);
+
+  const series = station.cumulative_m;
+  const allVals = DATA.stations.flatMap(s => s.cumulative_m);
+  const vmin = Math.min(...allVals), vmax = Math.max(...allVals);
+  const padL = 26, padR = 6, padT = 6, padB = 14;
+  const innerW = w - padL - padR, innerH = h - padT - padB;
+
+  const y0 = padT + (vmax - 0) / (vmax - vmin) * innerH;
+  ctx.strokeStyle = '#2d3441';
+  ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  ctx.moveTo(padL, y0); ctx.lineTo(w - padR, y0);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#4dabf7';
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  series.forEach((v, k) => {
+    const x = padL + (k / (series.length - 1)) * innerW;
+    const y = padT + (vmax - v) / (vmax - vmin) * innerH;
+    if(k === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  ctx.fillStyle = '#98a2b3';
+  ctx.font = '9px ui-monospace, Menlo, Consolas, monospace';
+  ctx.fillText('2015', padL - 4, h - 2);
+  ctx.fillText('2024', w - 26, h - 2);
+  ctx.fillText(vmax.toFixed(0) + 'm', 2, padT + 8);
+  ctx.fillText(vmin.toFixed(0) + 'm', 2, h - padB);
+}
+
+function popupStation(station){
+  const cum = cumulativeAtYear(station, state.year);
+  const tag = station.renourished ? ' <span style="font-size:10px;color:var(--gain)">(renourished)</span>' : '';
+  const sign = cum >= 0 ? '+' : '';
+  return `<table>
+    <tr><td><strong>${station.name}</strong>${tag}</td><td></td></tr>
+    <tr><td>Change ${state.year}</td><td><strong style="color:${cum >= 0 ? '#21908c' : '#e64a19'}">${sign}${cum.toFixed(1)} m</strong></td></tr>
+    <tr><td>Background rate</td><td>${(station.background_rate_m_yr >= 0 ? '+' : '')}${station.background_rate_m_yr.toFixed(2)} m/yr</td></tr>
+    <tr><td>Mean rate (2015-2024)</td><td>${(station.mean_rate_m_yr >= 0 ? '+' : '')}${station.mean_rate_m_yr.toFixed(2)} m/yr</td></tr>
+    <tr><td>Total change (10 yrs)</td><td>${(station.total_change_m >= 0 ? '+' : '')}${station.total_change_m.toFixed(1)} m</td></tr>
+  </table>
+  <div class="popup-chart"><canvas id="popup-chart-${station.id}" width="240" height="80"></canvas></div>`;
+}
+
+function rebuild(){
+  if(!DATA) return;
+  stationLayer.clearLayers();
+  segmentLayer.clearLayers();
+
+  const vals = DATA.stations.map(s => cumulativeAtYear(s, state.year));
+  const vmin = Math.min(-30, Math.min(...vals));
+  const vmax = Math.max(30, Math.max(...vals));
+
+  const yearFrac = (state.year - 2015 + 1) / 10;
+  DATA.segments.forEach(seg => {
+    const [lon, lat, totalChange] = seg;
+    const v = totalChange * yearFrac;
+    const color = colorForChange(v, vmin, vmax);
+    L.circleMarker([lat, lon], {
+      radius: 4, color: color, weight: 0,
+      fillColor: color, fillOpacity: 0.7
+    }).addTo(segmentLayer);
+  });
+
+  DATA.stations.forEach(s => {
+    const v = cumulativeAtYear(s, state.year);
+    const color = colorForChange(v, vmin, vmax);
+    const radius = 7 + Math.min(10, Math.abs(v) * 0.35);
+    const marker = L.circleMarker([s.lat, s.lon], {
+      radius: radius, color: '#0f1419', weight: 1.6,
+      fillColor: color, fillOpacity: 0.95
+    }).bindPopup(popupStation(s)).addTo(stationLayer);
+    marker.on('popupopen', () => {
+      const canvas = document.getElementById(`popup-chart-${s.id}`);
+      if(canvas) renderSparkChart(canvas, s);
+    });
+  });
+
+  renderLegend(vmin, vmax);
+  renderStationList();
+}
+
+function renderLegend(vmin, vmax){
+  const bar = document.getElementById('legend-bar');
+  bar.innerHTML = PAL.map(c => `<span style="background:${c}"></span>`).join('');
+  const ticks = document.getElementById('legend-ticks');
+  const fmt = (v) => (v >= 0 ? '+' : '') + v.toFixed(0) + ' m';
+  ticks.innerHTML = `<span>${fmt(vmin)}</span><span>${fmt(0)}</span><span>${fmt(vmax)}</span>`;
+}
+
+function renderStationList(){
+  const cont = document.getElementById('station-list');
+  cont.innerHTML = '';
+  const ranked = [...DATA.stations].sort((a, b) =>
+    cumulativeAtYear(a, state.year) - cumulativeAtYear(b, state.year));
+  ranked.forEach(s => {
+    const v = cumulativeAtYear(s, state.year);
+    const row = document.createElement('div');
+    row.className = 'station-row';
+    const cls = v >= 0 ? 'gain' : 'loss';
+    const sign = v >= 0 ? '+' : '';
+    const tag = s.renourished ? '<span class="tag">renourish</span>' : '';
+    row.innerHTML = `<div class="nm">${s.name}</div>
+                     ${tag}
+                     <div class="v ${cls}">${sign}${v.toFixed(1)} m</div>`;
+    row.addEventListener('click', () => {
+      map.setView([s.lat, s.lon], 11);
+      L.popup({offset:[0,-8]}).setLatLng([s.lat, s.lon]).setContent(popupStation(s)).openOn(map);
+      setTimeout(() => {
+        const canvas = document.getElementById(`popup-chart-${s.id}`);
+        if(canvas) renderSparkChart(canvas, s);
+      }, 80);
+    });
+    cont.appendChild(row);
+  });
+}
+
+function renderEventList(){
+  const cont = document.getElementById('event-list');
+  cont.innerHTML = '';
+  DATA.events.forEach(ev => {
+    const row = document.createElement('div');
+    row.innerHTML = `<span class="y">${ev.year}</span> ${ev.name}`;
+    cont.appendChild(row);
+  });
+  DATA.renourishment.forEach(r => {
+    const stn = DATA.stations[r.station_id];
+    const row = document.createElement('div');
+    row.innerHTML = `<span class="y" style="color:var(--gain)">${r.year}</span> +${r.meters_added} m sand @ ${stn.name}`;
+    cont.appendChild(row);
+  });
+}
+
+document.getElementById('year-slider').addEventListener('input', (e) => {
+  state.year = parseInt(e.target.value);
+  document.getElementById('year-label').textContent = state.year;
+  rebuild();
+});
+
+fetch('data/dashboard_data.json').then(r => r.json()).then(hdr => {
+  DATA = hdr;
+
+  document.getElementById('stat-rate').textContent =
+    (DATA.summary.mean_rate_m_yr_all >= 0 ? '+' : '') +
+    DATA.summary.mean_rate_m_yr_all.toFixed(2) + ' m/yr';
+  document.getElementById('stat-loss').textContent =
+    DATA.summary.biggest_loser.total_m.toFixed(1) + ' m';
+  document.getElementById('stat-gain').textContent =
+    '+' + DATA.summary.biggest_gainer.total_m.toFixed(1) + ' m';
+
+  renderEventList();
+  rebuild();
+  map.fitBounds([[DATA.aoi.s, -81.2], [DATA.aoi.n, -79.7]], {padding:[20, 20]});
+}).catch(err => {
+  document.body.insertAdjacentHTML('beforeend',
+    '<div style="position:fixed;top:60px;left:380px;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:#888;background:rgba(15,20,25,0.85);z-index:600;font-size:14px;">Could not load data files. Serve over HTTP.</div>');
+  console.error(err);
+});
+</script>
+</body>
+</html>
