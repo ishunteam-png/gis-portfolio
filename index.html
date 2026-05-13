@@ -6,133 +6,412 @@
 <title>GIS Portfolio — ISHU</title>
 <style>
 :root {
-  --bg: #0f1419;
-  --panel: #1a1f29;
-  --line: #2d3441;
-  --fg: #e7ecf3;
+  --bg: #0b0f14;
+  --bg-2: #0f1419;
+  --panel: #161b24;
+  --panel-2: #1e2532;
+  --line: #2a3140;
+  --line-2: #3a4356;
+  --fg: #e8edf3;
   --fg-dim: #98a2b3;
+  --fg-muted: #6b7280;
   --accent: #4dabf7;
+  --accent-2: #74c0fc;
+  --green: #51cf66;
+  --orange: #fd7e14;
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg);
-             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-.container { max-width: 1100px; margin: 0 auto; padding: 60px 24px; }
-h1 { font-size: 32px; margin: 0 0 8px; font-weight: 700; }
-.tagline { color: var(--fg-dim); font-size: 16px; margin-bottom: 36px; }
-.cta { background: var(--accent); color: #000; padding: 14px 26px; border-radius: 8px;
-       display: inline-block; font-weight: 600; text-decoration: none; font-size: 16px;
-       margin-bottom: 48px; }
-.cta:hover { filter: brightness(1.1); }
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
-        gap: 16px; margin-top: 16px; }
-.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
-        padding: 22px; text-decoration: none; color: var(--fg);
-        transition: border-color 0.15s ease, transform 0.15s ease; display: block; }
-.card:hover { border-color: var(--accent); transform: translateY(-2px); }
-.card .num { color: var(--accent); font-weight: 700; font-size: 13px;
-             letter-spacing: 1.2px; }
-.card h3 { margin: 4px 0 8px; font-size: 17px; }
-.card p { margin: 0; color: var(--fg-dim); font-size: 13px; line-height: 1.5; }
-.card .stack { margin-top: 12px; color: var(--accent); font-size: 11px; font-weight: 600;
-               letter-spacing: 0.4px; }
-.card .actions { margin-top: 14px; display: flex; gap: 8px; font-size: 12px; }
-.card .actions a { color: var(--fg-dim); text-decoration: none; padding: 4px 10px;
-                   border-radius: 4px; background: rgba(255,255,255,0.03); border: 1px solid var(--line); }
-.card .actions a:hover { color: var(--accent); border-color: var(--accent); }
-footer { margin-top: 48px; color: var(--fg-dim); font-size: 13px; line-height: 1.7;
-         border-top: 1px solid var(--line); padding-top: 24px; }
+html, body {
+  margin: 0; padding: 0; background: var(--bg); color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+a { color: inherit; }
+
+/* === top nav === */
+.nav {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(11, 15, 20, 0.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.nav-inner {
+  max-width: 1180px; margin: 0 auto; padding: 14px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.brand { font-weight: 700; font-size: 15px; letter-spacing: 0.5px; }
+.brand .dot { color: var(--accent); }
+.nav-links { display: flex; gap: 20px; font-size: 13px; }
+.nav-links a { color: var(--fg-dim); text-decoration: none; transition: color 0.15s; }
+.nav-links a:hover { color: var(--fg); }
+
+/* === container === */
+.container { max-width: 1180px; margin: 0 auto; padding: 64px 24px 24px; }
+
+/* === hero === */
+.hero { margin-bottom: 56px; }
+.kicker {
+  display: inline-block; color: var(--accent); font-size: 12px; font-weight: 600;
+  letter-spacing: 2px; text-transform: uppercase; margin-bottom: 14px;
+}
+h1 {
+  font-size: clamp(32px, 5vw, 48px); margin: 0 0 18px; font-weight: 800;
+  letter-spacing: -0.02em; line-height: 1.1;
+}
+h1 .grad {
+  background: linear-gradient(135deg, var(--accent) 0%, #b197fc 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.tagline {
+  color: var(--fg-dim); font-size: 16px; line-height: 1.6;
+  max-width: 740px; margin: 0 0 28px;
+}
+.tagline strong { color: var(--fg); font-weight: 600; }
+
+/* === hero stats row === */
+.hero-stats { display: flex; gap: 28px; flex-wrap: wrap; margin-bottom: 32px; }
+.hero-stat { display: flex; flex-direction: column; }
+.hero-stat .v { font-size: 24px; font-weight: 700; color: var(--fg); }
+.hero-stat .l { font-size: 11px; color: var(--fg-dim); text-transform: uppercase;
+                letter-spacing: 1.2px; margin-top: 2px; }
+
+.cta-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.cta {
+  background: var(--accent); color: #000; padding: 13px 22px; border-radius: 8px;
+  display: inline-flex; align-items: center; gap: 8px;
+  font-weight: 600; text-decoration: none; font-size: 15px;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 4px 16px rgba(77,171,247,0.25);
+}
+.cta:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(77,171,247,0.35); }
+.cta-secondary {
+  background: var(--panel); color: var(--fg); border: 1px solid var(--line);
+  box-shadow: none;
+}
+.cta-secondary:hover { border-color: var(--accent); }
+
+/* === grid === */
+.grid-title {
+  font-size: 12px; color: var(--fg-dim); text-transform: uppercase;
+  letter-spacing: 2px; margin: 0 0 18px;
+  display: flex; align-items: center; gap: 12px;
+}
+.grid-title::after {
+  content: ''; flex: 1; height: 1px; background: var(--line);
+}
+.grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 18px; margin-bottom: 64px;
+}
+
+/* === card === */
+.card {
+  background: linear-gradient(180deg, var(--panel) 0%, var(--bg-2) 100%);
+  border: 1px solid var(--line); border-radius: 14px;
+  padding: 26px 24px 22px;
+  display: flex; flex-direction: column;
+  position: relative; overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.card::before {
+  content: ''; position: absolute; inset: 0;
+  border-radius: 14px; padding: 1px;
+  background: linear-gradient(135deg, transparent 60%, rgba(77,171,247,0.4));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  opacity: 0; transition: opacity 0.2s;
+  pointer-events: none;
+}
+.card:hover { transform: translateY(-3px); border-color: var(--line-2); }
+.card:hover::before { opacity: 1; }
+
+.card-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 14px; gap: 12px;
+}
+.card-num {
+  font-size: 11px; font-weight: 700; color: var(--accent);
+  letter-spacing: 2px; line-height: 1;
+}
+.card-num .big {
+  display: block; font-size: 38px; font-weight: 800; color: var(--fg);
+  letter-spacing: -0.02em; line-height: 1; margin-top: 6px;
+  background: linear-gradient(180deg, var(--fg) 0%, var(--fg-dim) 120%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(81,207,102,0.12); color: var(--green);
+  font-size: 10px; font-weight: 700; padding: 4px 9px; border-radius: 12px;
+  border: 1px solid rgba(81,207,102,0.3); letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.badge .live-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--green);
+  box-shadow: 0 0 0 0 rgba(81,207,102,0.7);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(81,207,102,0.7); }
+  70% { box-shadow: 0 0 0 6px rgba(81,207,102,0); }
+  100% { box-shadow: 0 0 0 0 rgba(81,207,102,0); }
+}
+
+.card h3 {
+  margin: 0 0 10px; font-size: 18px; font-weight: 700;
+  letter-spacing: -0.01em; line-height: 1.3;
+}
+.card p {
+  margin: 0 0 16px; color: var(--fg-dim); font-size: 13.5px; line-height: 1.6;
+  flex: 1;
+}
+.card p strong { color: var(--fg); font-weight: 600; }
+
+.pills {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px;
+}
+.pill {
+  font-size: 11px; padding: 3px 9px; border-radius: 4px;
+  background: rgba(77,171,247,0.08); color: var(--accent-2);
+  border: 1px solid rgba(77,171,247,0.18);
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+.actions { display: flex; gap: 8px; }
+.btn {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 9px 14px; border-radius: 7px; font-size: 13px; font-weight: 600;
+  text-decoration: none; transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.btn-primary {
+  background: var(--accent); color: #000;
+}
+.btn-primary:hover { background: var(--accent-2); }
+.btn-secondary {
+  background: transparent; color: var(--fg-dim); border: 1px solid var(--line);
+  flex: 0 0 auto; padding: 9px 12px;
+}
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+/* === footer === */
+footer {
+  border-top: 1px solid var(--line); padding: 32px 0 64px;
+  display: flex; flex-wrap: wrap; gap: 32px; justify-content: space-between;
+  color: var(--fg-dim); font-size: 13px; line-height: 1.7;
+}
 footer a { color: var(--accent); text-decoration: none; }
-.live { display: inline-block; background: #51cf66; color: #000; font-size: 11px;
-        font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-left: 8px;
-        vertical-align: middle; letter-spacing: 0.4px; }
+footer a:hover { text-decoration: underline; }
+.foot-col { max-width: 480px; }
+.foot-col h4 {
+  font-size: 11px; color: var(--fg-muted); text-transform: uppercase;
+  letter-spacing: 1.5px; margin: 0 0 10px; font-weight: 600;
+}
+
+/* === responsive === */
+@media (max-width: 640px) {
+  .container { padding: 40px 18px 18px; }
+  .nav-inner { padding: 12px 18px; }
+  .nav-links { gap: 14px; }
+  .hero-stats { gap: 18px; }
+  .card { padding: 22px 20px 20px; }
+}
 </style>
 </head>
 <body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="brand">ISHU<span class="dot">.</span></div>
+    <div class="nav-links">
+      <a href="#projects">Projects</a>
+      <a href="https://github.com/ishunteam-png/gis-portfolio">GitHub</a>
+      <a href="mailto:singhishu2060@gmail.com">Contact</a>
+    </div>
+  </div>
+</nav>
+
 <div class="container">
 
-<h1>GIS / Geospatial Portfolio — ISHU</h1>
-<p class="tagline">Six end-to-end projects covering InSAR remote sensing, location intelligence,
-   route optimization, compound flood modelling, web mapping, and GeoAI.
-   Every project has an <strong>interactive dashboard</strong> built from scratch — click any card to launch it.</p>
+<section class="hero">
+  <div class="kicker">GIS / Geospatial Portfolio</div>
+  <h1>Six end-to-end <span class="grad">geospatial projects</span><br>with interactive dashboards</h1>
+  <p class="tagline">
+    InSAR remote sensing, location intelligence, route optimization, compound flood modelling,
+    web mapping, and GeoAI. Each project ships with its own <strong>interactive Leaflet dashboard</strong>
+    — built from scratch, end-to-end, and running live on GitHub Pages.
+  </p>
 
-<a class="cta" href="05-web-gis-dashboard/">🚀 Launch the flagship dashboard (Delhi InSAR)</a>
+  <div class="hero-stats">
+    <div class="hero-stat"><span class="v">6</span><span class="l">Projects</span></div>
+    <div class="hero-stat"><span class="v">6</span><span class="l">Live dashboards</span></div>
+    <div class="hero-stat"><span class="v">2,555</span><span class="l">PS analysed</span></div>
+    <div class="hero-stat"><span class="v">100%</span><span class="l">Built manually</span></div>
+  </div>
+
+  <div class="cta-row">
+    <a class="cta" href="05-web-gis-dashboard/">
+      🚀 Launch flagship dashboard
+    </a>
+    <a class="cta cta-secondary" href="#projects">
+      Browse all 6 projects ↓
+    </a>
+  </div>
+</section>
+
+<h2 class="grid-title" id="projects">Projects</h2>
 
 <div class="grid">
 
-  <a class="card" href="01-insar-road-subsidence/">
-    <div class="num">PROJECT 1<span class="live">DASHBOARD</span></div>
+  <article class="card">
+    <div class="card-head">
+      <div class="card-num">PROJECT<span class="big">01</span></div>
+      <span class="badge"><span class="live-dot"></span>Live</span>
+    </div>
     <h3>InSAR Road Subsidence — Delhi</h3>
-    <p>Strict EGMS-L3 Sentinel-1 InSAR pilot · 2,555 PS · V_U −10.3 to +4.7 mm/yr · true 2D vertical + east-west decomposition. Dashboard with velocity threshold filter, temporal coherence gate, and live histogram.</p>
-    <div class="stack">Sentinel-1 · MintPy · SNAP · PyAPS3</div>
-    <div class="actions">
-      <a href="01-insar-road-subsidence/">🗺️ dashboard</a>
-      <a href="https://github.com/ishunteam-png/gis-portfolio/tree/main/01-insar-road-subsidence">📄 source</a>
+    <p>
+      Strict EGMS-L3 Sentinel-1 InSAR pilot with <strong>2,555 PS</strong>, V_U range
+      −10.3 to +4.7 mm/yr and true 2D vertical + east-west decomposition. Dashboard has
+      velocity-threshold filter, temporal-coherence gate, and a live histogram.
+    </p>
+    <div class="pills">
+      <span class="pill">Sentinel-1</span>
+      <span class="pill">MintPy</span>
+      <span class="pill">SNAP</span>
+      <span class="pill">PyAPS3</span>
     </div>
-  </a>
+    <div class="actions">
+      <a class="btn btn-primary" href="01-insar-road-subsidence/">Open dashboard →</a>
+      <a class="btn btn-secondary" href="https://github.com/ishunteam-png/gis-portfolio/tree/main/01-insar-road-subsidence" title="Source on GitHub">↗</a>
+    </div>
+  </article>
 
-  <a class="card" href="02-real-estate-intel/">
-    <div class="num">PROJECT 2<span class="live">DASHBOARD</span></div>
+  <article class="card">
+    <div class="card-head">
+      <div class="card-num">PROJECT<span class="big">02</span></div>
+      <span class="badge"><span class="live-dot"></span>Live</span>
+    </div>
     <h3>Café Location Intelligence — Tbilisi</h3>
-    <p>8,415 cells over 504 km² · 5 signals incl. walkability (62,849 intersections) · validated Spearman ρ = 0.39. Dashboard shows top 100 cells with suitability filter and top-20 ring overlay.</p>
-    <div class="stack">OSMnx · GeoPandas · scipy.stats · Leaflet</div>
-    <div class="actions">
-      <a href="02-real-estate-intel/">🗺️ dashboard</a>
-      <a href="https://github.com/ishunteam-png/gis-portfolio/tree/main/02-real-estate-intel">📄 source</a>
+    <p>
+      <strong>8,415 cells</strong> over 504 km², 5 signals including walkability from a
+      62,849-node walk graph. Validated against real café distribution at
+      Spearman <strong>ρ = 0.39</strong>. Dashboard shows top 100 cells with suitability slider
+      and top-20 ring overlay.
+    </p>
+    <div class="pills">
+      <span class="pill">OSMnx</span>
+      <span class="pill">GeoPandas</span>
+      <span class="pill">scipy.stats</span>
+      <span class="pill">Leaflet</span>
     </div>
-  </a>
+    <div class="actions">
+      <a class="btn btn-primary" href="02-real-estate-intel/">Open dashboard →</a>
+      <a class="btn btn-secondary" href="https://github.com/ishunteam-png/gis-portfolio/tree/main/02-real-estate-intel" title="Source on GitHub">↗</a>
+    </div>
+  </article>
 
-  <a class="card" href="03-route-optimization/">
-    <div class="num">PROJECT 3<span class="live">DASHBOARD</span></div>
+  <article class="card">
+    <div class="card-head">
+      <div class="card-num">PROJECT<span class="big">03</span></div>
+      <span class="badge"><span class="live-dot"></span>Live</span>
+    </div>
     <h3>Advanced VRP with Time Windows</h3>
-    <p>60 stops · 5 vehicles · 3 algorithms compared (greedy / Clarke-Wright 1964 / OR-Tools GLS) · OR-Tools −20.3 % vs greedy. Dashboard lets you toggle between algorithms on the same map.</p>
-    <div class="stack">OSMnx · NetworkX · OR-Tools</div>
-    <div class="actions">
-      <a href="03-route-optimization/">🗺️ dashboard</a>
-      <a href="https://github.com/ishunteam-png/gis-portfolio/tree/main/03-route-optimization">📄 source</a>
+    <p>
+      <strong>60 stops</strong>, 5 vehicles, 3 algorithms head-to-head: greedy vs.
+      Clarke-Wright (1964) vs. OR-Tools GLS. OR-Tools wins by <strong>−20.3%</strong> vs greedy
+      on total drive time. Dashboard toggles algorithms on the same map.
+    </p>
+    <div class="pills">
+      <span class="pill">OSMnx</span>
+      <span class="pill">NetworkX</span>
+      <span class="pill">OR-Tools</span>
     </div>
-  </a>
+    <div class="actions">
+      <a class="btn btn-primary" href="03-route-optimization/">Open dashboard →</a>
+      <a class="btn btn-secondary" href="https://github.com/ishunteam-png/gis-portfolio/tree/main/03-route-optimization" title="Source on GitHub">↗</a>
+    </div>
+  </article>
 
-  <a class="card" href="04-flood-risk/">
-    <div class="num">PROJECT 4<span class="live">DASHBOARD</span></div>
+  <article class="card">
+    <div class="card-head">
+      <div class="card-num">PROJECT<span class="big">04</span></div>
+      <span class="badge"><span class="live-dot"></span>Live</span>
+    </div>
     <h3>Jakarta Compound Flood Risk</h3>
-    <p>World's most flood-prone megacity · 4-factor risk index (HAND + slope + drainage density + imperviousness) · 1,360 schools + 138 hospitals exposed. Dashboard with infra-type chips and risk threshold filter.</p>
-    <div class="stack">rasterio · scipy.ndimage · OSMnx</div>
-    <div class="actions">
-      <a href="04-flood-risk/">🗺️ dashboard</a>
-      <a href="https://github.com/ishunteam-png/gis-portfolio/tree/main/04-flood-risk">📄 source</a>
+    <p>
+      World's most flood-prone megacity. 4-factor risk index (HAND + slope + drainage
+      density + imperviousness). <strong>1,360 schools</strong> and 138 hospitals exposed.
+      Dashboard with infra-type chips and risk-threshold filter.
+    </p>
+    <div class="pills">
+      <span class="pill">rasterio</span>
+      <span class="pill">scipy.ndimage</span>
+      <span class="pill">OSMnx</span>
     </div>
-  </a>
+    <div class="actions">
+      <a class="btn btn-primary" href="04-flood-risk/">Open dashboard →</a>
+      <a class="btn btn-secondary" href="https://github.com/ishunteam-png/gis-portfolio/tree/main/04-flood-risk" title="Source on GitHub">↗</a>
+    </div>
+  </article>
 
-  <a class="card" href="05-web-gis-dashboard/">
-    <div class="num">PROJECT 5<span class="live">DASHBOARD</span></div>
+  <article class="card">
+    <div class="card-head">
+      <div class="card-num">PROJECT<span class="big">05</span></div>
+      <span class="badge"><span class="live-dot"></span>Flagship</span>
+    </div>
     <h3>Web GIS Dashboard — Delhi PS</h3>
-    <p>Single-file Leaflet · 6 presets, split view, live histogram, URL hash state for shareable views. ~480 lines vanilla JS.</p>
-    <div class="stack">Leaflet · Chroma.js · vanilla JS</div>
-    <div class="actions">
-      <a href="05-web-gis-dashboard/">🗺️ dashboard</a>
-      <a href="https://github.com/ishunteam-png/gis-portfolio/tree/main/05-web-gis-dashboard">📄 source</a>
+    <p>
+      Single-file Leaflet build with 6 presets, split view, live histogram, and URL-hash
+      state for shareable views. ~<strong>480 lines</strong> of vanilla JS — no framework,
+      no build step, just open the HTML.
+    </p>
+    <div class="pills">
+      <span class="pill">Leaflet</span>
+      <span class="pill">Chroma.js</span>
+      <span class="pill">vanilla JS</span>
     </div>
-  </a>
+    <div class="actions">
+      <a class="btn btn-primary" href="05-web-gis-dashboard/">Open dashboard →</a>
+      <a class="btn btn-secondary" href="https://github.com/ishunteam-png/gis-portfolio/tree/main/05-web-gis-dashboard" title="Source on GitHub">↗</a>
+    </div>
+  </article>
 
-  <a class="card" href="06-geoai-road-damage/">
-    <div class="num">PROJECT 6<span class="live">DASHBOARD</span></div>
-    <h3>GeoAI Road Damage + Project 1 Join</h3>
-    <p>YOLOv8m-seg · mask-area severity · all 4 detections land on subsiding PS — operationalises the InSAR→damage causal chain. Dashboard shows the join lines between detections and nearest PS.</p>
-    <div class="stack">ultralytics · PyTorch · OpenCV</div>
-    <div class="actions">
-      <a href="06-geoai-road-damage/">🗺️ dashboard</a>
-      <a href="https://github.com/ishunteam-png/gis-portfolio/tree/main/06-geoai-road-damage">📄 source</a>
+  <article class="card">
+    <div class="card-head">
+      <div class="card-num">PROJECT<span class="big">06</span></div>
+      <span class="badge"><span class="live-dot"></span>Live</span>
     </div>
-  </a>
+    <h3>GeoAI Road Damage × InSAR Join</h3>
+    <p>
+      YOLOv8m-seg with mask-area severity. All <strong>4 detections</strong> landed on
+      subsiding PS from Project 1 — operationalises the InSAR → damage causal chain.
+      Dashboard shows join lines between detections and nearest PS.
+    </p>
+    <div class="pills">
+      <span class="pill">ultralytics</span>
+      <span class="pill">PyTorch</span>
+      <span class="pill">OpenCV</span>
+    </div>
+    <div class="actions">
+      <a class="btn btn-primary" href="06-geoai-road-damage/">Open dashboard →</a>
+      <a class="btn btn-secondary" href="https://github.com/ishunteam-png/gis-portfolio/tree/main/06-geoai-road-damage" title="Source on GitHub">↗</a>
+    </div>
+  </article>
 
 </div>
 
 <footer>
-  Source repo: <a href="https://github.com/ishunteam-png/gis-portfolio">github.com/ishunteam-png/gis-portfolio</a><br>
-  Every project folder has its own README with the full methodology, approach, results, validation,
-  and a "what I'd build next" section. Everything was built and run manually on my own laptop —
-  no cloud compute, no managed services.<br><br>
-  Contact: singhishu2060@gmail.com
+  <div class="foot-col">
+    <h4>About</h4>
+    Each project folder has its own README with the full methodology, approach, results,
+    validation, and a "what I'd build next" section. Everything was built and run
+    manually on my own laptop — no cloud compute, no managed services.
+  </div>
+  <div class="foot-col">
+    <h4>Contact &amp; source</h4>
+    <a href="mailto:singhishu2060@gmail.com">singhishu2060@gmail.com</a><br>
+    <a href="https://github.com/ishunteam-png/gis-portfolio">github.com/ishunteam-png/gis-portfolio</a>
+  </div>
 </footer>
 
 </div>
