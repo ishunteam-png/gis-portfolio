@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Rondônia Deforestation — NDVI Time Series 2015–2024</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<style>
+:root {
+  --bg: #0f1419; --panel: #1a1f29; --panel-2: #232a36;
+  --line: #2d3441; --fg: #e7ecf3; --fg-dim: #98a2b3;
+  --accent: #4dabf7; --green: #51cf66; --red: #ff6b6b; --orange: #fd7e14;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+     color:var(--fg);background:var(--bg);
+     display:grid;grid-template-rows:60px 1fr;grid-template-columns:360px 1fr}
+header{grid-column:1/3;background:var(--panel);border-bottom:1px solid var(--line);
+       display:flex;align-items:center;padding:0 20px;gap:16px}
+header h1{margin:0;font-size:16px;font-weight:600}
+header h1 .sub{color:var(--fg-dim);font-weight:400;margin-left:8px;font-size:13px}
+header .stats{margin-left:auto;display:flex;gap:10px}
+.stat{background:var(--panel-2);padding:5px 12px;border-radius:6px;
+      border:1px solid var(--line);min-width:80px}
+.stat .lbl{color:var(--fg-dim);font-size:10px;text-transform:uppercase;letter-spacing:1px}
+.stat .val{color:var(--fg);font-size:15px;font-weight:600}
+.stat .val.bad{color:var(--red)}
+aside{background:var(--panel);border-right:1px solid var(--line);padding:14px 16px;overflow-y:auto}
+aside h2{margin:16px 0 8px;font-size:11px;font-weight:600;color:var(--fg-dim);
+         text-transform:uppercase;letter-spacing:1.4px}
+aside h2:first-of-type{margin-top:0}
+.year-slider{background:var(--panel-2);border:1px solid var(--line);
+             border-radius:6px;padding:10px}
+.year-slider input{width:100%;accent-color:var(--accent)}
+.year-slider .label{display:flex;justify-content:space-between;margin-top:6px;
+                    color:var(--fg-dim);font-size:11px}
+.year-slider .label .big{color:var(--fg);font-size:15px;font-weight:700}
+.legend-row{display:flex;align-items:center;gap:8px;font-size:12px;
+            padding:4px 8px;background:var(--panel-2);border:1px solid var(--line);
+            border-radius:5px;margin-bottom:3px}
+.legend-row .sw{width:14px;height:14px;border-radius:3px}
+.legend-row .ct{margin-left:auto;color:var(--fg-dim);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px}
+.bar-chart{background:var(--panel-2);border:1px solid var(--line);padding:10px;border-radius:6px}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:11px}
+.bar-row .yr{width:34px;color:var(--fg-dim);font-family:ui-monospace,Menlo,Consolas,monospace}
+.bar-row .bar{flex:1;height:13px;background:rgba(215,48,39,0.15);position:relative;border-radius:2px;overflow:hidden}
+.bar-row .bar .fill{height:100%;background:var(--red);transition:width 0.2s}
+.bar-row .val{width:52px;text-align:right;color:var(--fg);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10.5px}
+.showcases{display:flex;flex-direction:column;gap:3px}
+.showcase{background:var(--panel-2);border:1px solid var(--line);border-radius:6px;
+          padding:6px 10px;font-size:11.5px;cursor:pointer;user-select:none;
+          display:flex;justify-content:space-between;align-items:center}
+.showcase:hover{border-color:var(--accent)}
+.showcase.on{border-color:var(--accent);background:rgba(77,171,247,0.10)}
+.showcase .nm{font-weight:600}
+.showcase .yr-tag{color:var(--fg-dim);font-size:9.5px;font-family:ui-monospace,Menlo,Consolas,monospace;
+                  background:var(--panel);padding:1px 5px;border-radius:3px;border:1px solid var(--line)}
+.showcase .yr-tag.cleared{color:var(--red);border-color:rgba(255,107,107,0.4)}
+#map{width:100%;height:100%;background:#0a0e14}
+.leaflet-tile{filter:grayscale(0.20) brightness(0.78)}
+.leaflet-popup-content-wrapper{background:var(--panel);color:var(--fg);border:1px solid var(--line);
+   border-radius:7px;box-shadow:0 6px 24px rgba(0,0,0,0.4)}
+.leaflet-popup-tip{background:var(--panel);border:1px solid var(--line)}
+.leaflet-popup-content{font-family:inherit;font-size:12px;min-width:180px}
+.leaflet-popup-content table{border-collapse:collapse;width:100%}
+.leaflet-popup-content td{padding:2px 8px 2px 0}
+.leaflet-popup-content td:first-child{color:var(--fg-dim)}
+.foot{color:var(--fg-dim);font-size:11px;margin-top:18px;line-height:1.55;
+      border-top:1px solid var(--line);padding-top:12px}
+.foot a{color:var(--accent);text-decoration:none}
+.back{display:block;text-align:center;background:var(--panel-2);color:var(--accent);
+      text-decoration:none;padding:8px;border-radius:6px;font-size:12px;
+      border:1px solid var(--line);margin-bottom:14px}
+.back:hover{border-color:var(--accent)}
+.chart-card{position:absolute;right:14px;top:74px;width:430px;background:var(--panel);
+            border:1px solid var(--line);border-radius:8px;padding:13px;
+            box-shadow:0 8px 30px rgba(0,0,0,0.5);display:none;z-index:600}
+.chart-card.on{display:block}
+.chart-card .title{font-size:13px;font-weight:600;margin-bottom:2px}
+.chart-card .sub{font-size:11px;color:var(--fg-dim);margin-bottom:8px}
+.chart-card svg{width:100%;height:160px;background:var(--panel-2);
+                border:1px solid var(--line);border-radius:5px}
+.chart-card .close{position:absolute;right:8px;top:5px;color:var(--fg-dim);
+                   cursor:pointer;font-size:18px;line-height:1}
+.chart-card .close:hover{color:var(--fg)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Rondônia Deforestation<span class="sub">Sentinel-2 + Landsat 8/9 NDVI · 2015–2024 · BR-364 fishbone</span></h1>
+  <div class="stats">
+    <div class="stat"><div class="lbl">Cells lost</div><div class="val bad" id="stat-lost">—</div></div>
+    <div class="stat"><div class="lbl">Total loss</div><div class="val bad" id="stat-km">—</div></div>
+    <div class="stat"><div class="lbl">Peak year</div><div class="val" id="stat-peak">—</div></div>
+    <div class="stat"><div class="lbl">Years</div><div class="val">2015–2024</div></div>
+  </div>
+</header>
+<aside>
+  <a class="back" href="../">← back to portfolio</a>
+
+  <h2>Year</h2>
+  <div class="year-slider">
+    <input type="range" id="year" min="2015" max="2024" value="2024" step="1" />
+    <div class="label">
+      <span>2015</span>
+      <span class="big" id="year-label">2024</span>
+      <span>2024</span>
+    </div>
+  </div>
+
+  <h2>Status (this year)</h2>
+  <div id="legend"></div>
+
+  <h2>Annual forest loss (km²)</h2>
+  <div class="bar-chart" id="loss-chart"></div>
+
+  <h2>Showcase pixels</h2>
+  <p style="font-size:11px;color:var(--fg-dim);margin:0 0 8px;line-height:1.5">
+    Click any pixel to see its monthly NDVI trajectory 2015 → 2024.
+  </p>
+  <div class="showcases" id="showcases"></div>
+
+  <div class="foot">
+    <strong>2019</strong> was the year of the headline-grabbing Amazon fires —
+    visible here as a 694 km² loss spike. <strong>2024</strong> shows the
+    Lula-era enforcement effect: loss drops 67% vs the 2021–2023 average.<br><br>
+    Indigenous territories (Roosevelt + Igarapé-Lourdes) stay at forest NDVI
+    throughout the time series — protection works.<br><br>
+    Source: USGS Landsat 8/9 + ESA Sentinel-2 SR via Google Earth Engine ·
+    <a href="https://github.com/ishunteam-png/gis-portfolio/tree/main/09-ndvi-change">source on GitHub</a>
+  </div>
+</aside>
+<div id="map"></div>
+
+<div class="chart-card" id="chart">
+  <div class="close" id="chart-close">×</div>
+  <div class="title" id="chart-title">—</div>
+  <div class="sub" id="chart-sub">—</div>
+  <svg viewBox="0 0 420 160" id="chart-svg" preserveAspectRatio="none"></svg>
+</div>
+
+<script>
+let DATA = null;
+let state = {year: 2024, focusedShowcase: null};
+
+const map = L.map('map', {zoomControl:true, preferCanvas:true}).setView([-10.5, -62.5], 8);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  {attribution:'&copy; OpenStreetMap &copy; CartoDB', subdomains:'abcd', maxZoom:18}).addTo(map);
+
+let cellLayer = L.layerGroup().addTo(map);
+let showcaseLayer = L.layerGroup().addTo(map);
+
+function cellBounds(grid, i, j){
+  const {x0, y0, dx, dy} = grid;
+  return [[y0 + j*dy, x0 + i*dx], [y0 + (j+1)*dy, x0 + (i+1)*dx]];
+}
+
+function ndviFor(cell, yearIdx){
+  const ndvi_int = cell[4];
+  const scale = DATA.ndvi_scale || 1000;
+  return ndvi_int[yearIdx] / scale;
+}
+
+function statusForYear(cell, yearIdx){
+  const v = ndviFor(cell, yearIdx);
+  if(v > 0.70) return 0;
+  if(v > 0.45) return 1;
+  if(v > 0.20) return 2;
+  if(v > -0.05) return 3;
+  return 4;
+}
+
+function colorForStatus(s){
+  return DATA.status_colors[String(s)] || "#444";
+}
+
+function renderLegend(){
+  const yearIdx = DATA.years.indexOf(state.year);
+  const counts = [0, 0, 0, 0, 0];
+  DATA.grid.cells.forEach(c => {
+    counts[statusForYear(c, yearIdx)]++;
+  });
+  const labels = ["Forest", "Degraded", "Cleared / pasture", "Bare / burned", "Water"];
+  const legend = document.getElementById('legend');
+  legend.innerHTML = '';
+  for(let s = 0; s < 5; s++){
+    if(counts[s] === 0 && s === 4) continue;
+    const row = document.createElement('div');
+    row.className = 'legend-row';
+    row.innerHTML = `<div class="sw" style="background:${colorForStatus(s)}"></div>
+                     <div>${labels[s]}</div>
+                     <div class="ct">${counts[s]}</div>`;
+    legend.appendChild(row);
+  }
+}
+
+function renderLossChart(){
+  const ch = document.getElementById('loss-chart');
+  ch.innerHTML = '';
+  const losses = DATA.grid.stats.by_year_km2;
+  const maxLoss = Math.max(...DATA.years.map(y => losses[y]));
+  DATA.years.forEach(y => {
+    const v = losses[y];
+    const w = (v / maxLoss) * 100;
+    const row = document.createElement('div');
+    row.className = 'bar-row';
+    if(y === state.year) row.style.outline = '1px solid var(--accent)';
+    row.innerHTML = `<div class="yr">${y}</div>
+                     <div class="bar"><div class="fill" style="width:${w}%"></div></div>
+                     <div class="val">${v.toFixed(0)}</div>`;
+    row.addEventListener('click', () => {
+      state.year = y;
+      document.getElementById('year').value = y;
+      document.getElementById('year-label').textContent = y;
+      rebuild();
+    });
+    ch.appendChild(row);
+  });
+}
+
+function renderShowcases(){
+  const cont = document.getElementById('showcases');
+  cont.innerHTML = '';
+  DATA.showcases.forEach((s, idx) => {
+    const row = document.createElement('div');
+    row.className = 'showcase' + (state.focusedShowcase === idx ? ' on' : '');
+    const yrTag = s.cleared_year
+      ? `<span class="yr-tag cleared">cleared ${s.cleared_year}</span>`
+      : `<span class="yr-tag">stable</span>`;
+    row.innerHTML = `<span class="nm">${s.label}</span>${yrTag}`;
+    row.addEventListener('click', () => {
+      state.focusedShowcase = state.focusedShowcase === idx ? null : idx;
+      renderShowcases();
+      renderChart();
+    });
+    cont.appendChild(row);
+  });
+}
+
+function popupCell(cell){
+  const [i, j, cleared_yr, , ndvi_int] = cell;
+  const scale = DATA.ndvi_scale || 1000;
+  const rows = DATA.years.map((y, k) => {
+    const v = ndvi_int[k] / scale;
+    const status = statusForYear(cell, k);
+    const sw = `<span style="display:inline-block;width:8px;height:8px;background:${colorForStatus(status)};border-radius:2px;margin-right:5px"></span>`;
+    return `<tr><td>${sw}${y}</td><td><strong>${v.toFixed(2)}</strong></td></tr>`;
+  }).join('');
+  const clearedTxt = cleared_yr ? `<strong style="color:#ff6b6b">cleared in ${cleared_yr}</strong>`
+                                : `<span style="color:#69db7c">never cleared</span>`;
+  return `<table>
+    <tr><td colspan="2">${clearedTxt}</td></tr>
+    <tr><td colspan="2" style="border-top:1px solid var(--line);padding-top:3px"><strong>NDVI per year</strong></td></tr>
+    ${rows}</table>`;
+}
+
+function rebuild(){
+  if(!DATA) return;
+  cellLayer.clearLayers();
+  const g = DATA.grid;
+  const yearIdx = DATA.years.indexOf(state.year);
+  g.cells.forEach(cell => {
+    const [i, j] = cell;
+    const status = statusForYear(cell, yearIdx);
+    const c = colorForStatus(status);
+    L.rectangle(cellBounds(g.grid, i, j), {
+      color: c, weight: 0.3, fillColor: c, fillOpacity: 0.6
+    }).bindPopup(popupCell(cell)).addTo(cellLayer);
+  });
+  renderLegend();
+  renderLossChart();
+}
+
+function renderShowcaseMarkers(){
+  showcaseLayer.clearLayers();
+  DATA.showcases.forEach((s, idx) => {
+    const cleared = !!s.cleared_year;
+    L.circleMarker([s.lat, s.lon], {
+      radius: 6, color: cleared ? "#ff6b6b" : "#51cf66", weight: 2,
+      fillColor: cleared ? "#ff6b6b" : "#51cf66", fillOpacity: 0.85
+    }).bindTooltip(s.label, {direction: "top", offset: [0, -6]})
+      .on('click', () => {
+        state.focusedShowcase = state.focusedShowcase === idx ? null : idx;
+        renderShowcases();
+        renderChart();
+      })
+      .addTo(showcaseLayer);
+  });
+}
+
+function renderChart(){
+  const card = document.getElementById('chart');
+  if(state.focusedShowcase === null){ card.classList.remove('on'); return; }
+  const s = DATA.showcases[state.focusedShowcase];
+  card.classList.add('on');
+  document.getElementById('chart-title').textContent = s.label;
+  document.getElementById('chart-sub').innerHTML = s.cleared_year
+    ? `<span style="color:#ff6b6b">Cleared in ${s.cleared_year}</span> · monthly NDVI 2015–2024 (120 obs)`
+    : `<span style="color:#69db7c">Stable forest</span> · monthly NDVI 2015–2024 (120 obs)`;
+
+  const svg = document.getElementById('chart-svg');
+  svg.innerHTML = '';
+  const W = 420, H = 160;
+  const px = 35, py = 12, plotW = W - px - 8, plotH = H - py - 24;
+  const scale = DATA.ndvi_scale || 1000;
+  const vals = s.ndvi_monthly.map(v => v / scale);
+  const yMin = -0.05, yMax = 0.95;
+  function x(i){ return px + (i / (vals.length - 1)) * plotW; }
+  function y(v){ return py + (1 - (v - yMin) / (yMax - yMin)) * plotH; }
+
+  // grid lines for NDVI thresholds
+  const guides = [
+    {v: 0.70, lbl: "Forest"},
+    {v: 0.45, lbl: "Degraded"},
+    {v: 0.20, lbl: "Pasture"},
+  ];
+  guides.forEach(g => {
+    svg.insertAdjacentHTML('beforeend',
+      `<line x1="${px}" x2="${W-8}" y1="${y(g.v)}" y2="${y(g.v)}"
+             stroke="#3a4356" stroke-width="0.6" stroke-dasharray="3 3" />
+       <text x="${px-3}" y="${y(g.v)+3}" fill="#98a2b3" font-size="9" text-anchor="end">${g.v.toFixed(2)}</text>`);
+  });
+
+  // year tick marks
+  for(let yi = 0; yi < DATA.years.length; yi++){
+    const xpos = x(yi * 12);
+    svg.insertAdjacentHTML('beforeend',
+      `<line x1="${xpos}" x2="${xpos}" y1="${py + plotH}" y2="${py + plotH + 4}" stroke="#3a4356" />
+       <text x="${xpos}" y="${py + plotH + 14}" fill="#98a2b3" font-size="9" text-anchor="middle">${DATA.years[yi]}</text>`);
+  }
+
+  // cleared-year vertical marker
+  if(s.cleared_year){
+    const cidx = DATA.years.indexOf(s.cleared_year) * 12 + 8;     // August of that year
+    svg.insertAdjacentHTML('beforeend',
+      `<line x1="${x(cidx)}" x2="${x(cidx)}" y1="${py}" y2="${py + plotH}"
+             stroke="#ff6b6b" stroke-width="1.2" stroke-dasharray="4 2" />
+       <text x="${x(cidx)+3}" y="${py+10}" fill="#ff6b6b" font-size="9">burn</text>`);
+  }
+
+  // polyline
+  const pts = vals.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  svg.insertAdjacentHTML('beforeend',
+    `<polyline points="${pts}" stroke="#4dabf7" stroke-width="1.4" fill="none" />`);
+}
+
+document.getElementById('year').addEventListener('input', e => {
+  state.year = +e.target.value;
+  document.getElementById('year-label').textContent = state.year;
+  rebuild();
+});
+
+document.getElementById('chart-close').addEventListener('click', () => {
+  state.focusedShowcase = null;
+  renderShowcases();
+  renderChart();
+});
+
+Promise.all([
+  fetch('data/dashboard_data.json').then(r => r.json()),
+  fetch('data/grid.json').then(r => r.json()).catch(() => null),
+  fetch('data/showcases.json').then(r => r.json()).catch(() => null),
+]).then(([hdr, gridFile, showFile]) => {
+  const grid = hdr.grid_meta || hdr.grid || {};
+  grid.cells = (gridFile && gridFile.cells) || [];
+  const showcases = (showFile && showFile.showcases) || [];
+  DATA = {...hdr, grid: grid, showcases: showcases};
+
+  // Header stats
+  document.getElementById('stat-lost').textContent = grid.stats.cleared_cells;
+  document.getElementById('stat-km').textContent = grid.stats.total_loss_km2.toFixed(0) + ' km²';
+  const losses = grid.stats.by_year_km2;
+  const peak = DATA.years.reduce((best, y) => losses[y] > losses[best] ? y : best, DATA.years[0]);
+  document.getElementById('stat-peak').textContent = peak;
+
+  renderShowcases();
+  renderShowcaseMarkers();
+  rebuild();
+  map.fitBounds([[DATA.aoi.s, DATA.aoi.w], [DATA.aoi.n, DATA.aoi.e]], {padding:[20, 20]});
+}).catch(err => {
+  document.body.insertAdjacentHTML('beforeend',
+    '<div style="position:fixed;top:60px;left:380px;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:#888;background:rgba(15,20,25,0.85);z-index:600;font-size:14px;">Could not load data files. Serve over HTTP.</div>');
+  console.error(err);
+});
+</script>
+</body>
+</html>
