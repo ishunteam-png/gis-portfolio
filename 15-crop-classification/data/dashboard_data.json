@@ -1,0 +1,34 @@
+{
+  "region": "Story County, Iowa (Corn Belt)",
+  "aoi": {"w": -93.85, "s": 41.85, "e": -93.3, "n": 42.2},
+  "grid": {"x0": -93.85, "y0": 41.85, "dx": 0.01964, "dy": 0.01458, "nx": 28, "ny": 24},
+  "cell_area_km2": 2.622,
+  "classes": ["corn", "soybean", "hay", "wheat", "other_veg", "urban", "water"],
+  "colors": ["#fde725", "#5ec962", "#21908c", "#a3d65c", "#9d4edd", "#666666", "#1976d2"],
+  "class_labels": {
+    "corn": "Corn",
+    "soybean": "Soybean",
+    "hay": "Hay / alfalfa",
+    "wheat": "Wheat / small grains",
+    "other_veg": "Other vegetation",
+    "urban": "Urban / developed",
+    "water": "Open water"
+  },
+  "composition_pct": {
+    "corn": 53.3, "soybean": 36.0, "hay": 3.0, "wheat": 1.2,
+    "other_veg": 3.9, "urban": 2.4, "water": 0.3
+  },
+  "models": [
+    {"id": "s1_only", "label": "S1 only (radar)", "OA": 0.815, "OA_realised": 0.8095, "kappa": 0.77, "n_features": 4, "features": ["VV mean", "VH mean", "VV/VH ratio", "VV temporal range"]},
+    {"id": "s2_only", "label": "S2 only (optical)", "OA": 0.872, "OA_realised": 0.8631, "kappa": 0.84, "n_features": 4, "features": ["NDVI peak", "NDVI temporal mean", "SWIR1 mean", "Red mean"]},
+    {"id": "s1_s2", "label": "S1 + S2 fusion", "OA": 0.924, "OA_realised": 0.9271, "kappa": 0.91, "n_features": 8, "features": ["NDVI peak", "NDVI mean", "VV mean", "VH mean", "VV/VH ratio", "VV temp range", "SWIR1 mean", "Red mean"]}
+  ],
+  "n_cells": 672,
+  "data_files": {"cells": "data/cells.json"},
+  "data_source": "Sentinel-1 GRD VV/VH + Sentinel-2 L2A SR via Element84 Earth Search · USDA NASS Cropland Data Layer (CDL) 2023 ground truth",
+  "validation": {
+    "ground_truth": "USDA NASS Cropland Data Layer (CDL) 2023",
+    "n_validation_samples": 6720,
+    "train_test_split": 0.8
+  }
+}
