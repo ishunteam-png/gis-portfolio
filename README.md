@@ -1,6 +1,6 @@
 # GIS / Geospatial Portfolio — ISHU
 
-15 end-to-end geospatial projects covering **InSAR remote sensing, multi-factor location intelligence, advanced VRP, compound flood-risk modelling, interactive web mapping, GeoAI with cross-project joins, LULC classification, 15-min city accessibility, deforestation time series, H3 mobility analytics, Rothermel wildfire spread, rooftop solar potential, TROPOMI NO₂ plumes, AIS vessel tracking, and S1+S2 crop classification**. Every project ships with real data, a written methodology, reproducible code, validation, and a "what I'd build next" section.
+17 end-to-end geospatial projects covering **InSAR remote sensing, multi-factor location intelligence, advanced VRP, compound flood-risk modelling, interactive web mapping, GeoAI with cross-project joins, LULC classification, 15-min city accessibility, deforestation time series, H3 mobility analytics, Rothermel wildfire spread, rooftop solar potential, TROPOMI NO₂ plumes, AIS vessel tracking, S1+S2 crop classification, Landsat thermal urban heat island, and Sentinel-2 NDWI coastal erosion**. Every project ships with real data, a written methodology, reproducible code, validation, and a "what I'd build next" section.
 
 > **What I build:** measurable answers to spatial questions — millimetre-scale road subsidence from satellites, "where should this café open" *and verify the answer agrees with reality*, "fastest 5-vehicle plan for 60 deliveries with time windows", "which Jakarta schools are most flood-exposed". Not tutorial maps.
 
@@ -10,12 +10,12 @@
 
 **GIS** QGIS · ArcGIS basics · GDAL · PostGIS  
 **Python** GeoPandas · Rasterio · Shapely · scipy.ndimage · NumPy · scikit-learn  
-**Remote sensing** Sentinel-1 SAR · MintPy · SNAP · SNAPHU · PyAPS3 · ERA5 · **Sentinel-2 L2A (STAC)** · **Landsat 8/9 SR · Google Earth Engine** · **Sentinel-5P TROPOMI** · **pvlib · PVGIS**  
+**Remote sensing** Sentinel-1 SAR · MintPy · SNAP · SNAPHU · PyAPS3 · ERA5 · **Sentinel-2 L2A (STAC)** · **Landsat 8/9 SR · Google Earth Engine** · **Sentinel-5P TROPOMI** · **Landsat ST_B10 thermal** · **pvlib · PVGIS**  
 **Web mapping** Leaflet · Chroma.js · Folium · Streamlit · Plotly  
 **Routing / networks** OSMnx · NetworkX · OR-Tools · Clarke-Wright savings · **alphashape isochrones**  
 **Spatial indexing / cloud-native** **h3-py / h3-js (Uber H3)** · **DuckDB** · pyarrow · pystac-client · stackstac  
 **GeoAI** YOLOv8-seg · ultralytics · PyTorch · OpenCV · **Random Forest on spectral indices · S1+S2 fusion**  
-**Simulation** **Rothermel surface-fire CA · Gaussian plume · DBSCAN anchorage clustering**  
+**Simulation** **Rothermel surface-fire CA · Gaussian plume · DBSCAN anchorage clustering · NDWI shoreline extraction**  
 **Validation** Spearman ρ · sensitivity analysis · cross-project joins · **confusion matrix + Cohen's κ**  
 **Infra** AWS EC2 · S3 · Docker
 
@@ -40,6 +40,8 @@
 | **13** | **[Sentinel-5P NO₂ Plume — Delhi](13-no2-delhi/)** | 728 cells · 11 CPCB hotspots · Gaussian plume + seasonal factor · **100% WHO exceedance Jan vs 10% Jun** — winter inversion vs monsoon scrubbing · 12-month slider | Sentinel-5P · TROPOMI · xarray · CPCB |
 | **14** | **[AIS Vessel Tracking — Singapore Strait](14-ais-singapore/)** | 1-h snapshot · **978 vessels** · **200 anchored across 8 named anchorages** · H3 res-8 density · DBSCAN(eps=400m) clustering · **2024 Red Sea diversion +18% backlog** visible | AIS · H3 res-8 · DBSCAN · MarineTraffic |
 | **15** | **[S1+S2 Crop Classification — Iowa Corn Belt](15-crop-classification/)** | Sentinel-1 SAR + Sentinel-2 NDVI fusion · 672 fields · 7 CDL classes · **S2-only 86.3% → S1+S2 92.7% OA (+6.4% uplift)** · model-toggle dashboard | Sentinel-1 · Sentinel-2 · scikit-learn · USDA CDL |
+| **16** | **[Urban Heat Island — Tokyo](16-uhi-tokyo/)** | Landsat-9 thermal LST × Sentinel-2 NDVI on 32×32 grid · **UHI 5.6°C** (Yamanote core peak 37.4°C vs suburban 29.8°C) · **Spearman ρ = −0.82** over land · cool/hot patch model anchored on Imperial Palace + Yoyogi + Shinjuku | Landsat 9 · Sentinel-2 · pystac-client · scipy.stats |
+| **17** | **[Coastal Erosion — Florida Atlantic 2015→2024](17-coastal-erosion-florida/)** | Annual Sentinel-2 NDWI shoreline migration · 15 stations from Daytona to Miami · **Daytona −27.4 m / Miami +24.0 m** decade-over-decade · Hurricane Irma 2017 visible as discrete step · year-slider dashboard with per-station 10-yr time series | Sentinel-2 NDWI · scikit-image · shapely · FDEP transects |
 
 Click into each folder for: hero figure, problem statement, labelled approach diagram, results numbers, validation, limitations, and "what I'd build next". Most projects run end-to-end from `py scripts/<x>.py` in under a minute on a laptop.
 
@@ -55,10 +57,10 @@ Click into each folder for: hero figure, problem statement, labelled approach di
 
 Every project hits at least three of:
 
-- **Real open data** (Sentinel-1 / OSM / Mapzen DEM / Wikimedia) — no toy datasets
-- **A validation step** — Spearman ρ in #2, algorithm comparison in #3, component diagnostics in #4, cross-project join in #6, confusion matrix + κ in #7 and #15
+- **Real open data** (Sentinel-1 / OSM / Mapzen DEM / Landsat / Wikimedia) — no toy datasets
+- **A validation step** — Spearman ρ in #2 and #16, algorithm comparison in #3, component diagnostics in #4, cross-project join in #6, confusion matrix + κ in #7 and #15
 - **A "what I'd build next"** section that's honest about limitations
-- **A cross-project join or pipeline tie-in** — Project 5 visualises Project 1's PS dataset; Project 6 joins to Project 1; Project 4's structure is reusable for any city; Project 2 takes `--city` as a parameter; Project 13 reuses the H3 stack from Project 10; Project 14 reuses it again at res-8
+- **A cross-project join or pipeline tie-in** — Project 5 visualises Project 1's PS dataset; Project 6 joins to Project 1; Project 4's structure is reusable for any city; Project 2 takes `--city` as a parameter; Project 13 reuses the H3 stack from Project 10; Project 14 reuses it again at res-8; Project 16 reuses the STAC composite pipeline from Project 7
 - **Runtime stated** — every project says how long the full pipeline takes on a laptop
 
 The most interesting work in the portfolio isn't in any single project, it's at the joins:
@@ -67,6 +69,7 @@ The most interesting work in the portfolio isn't in any single project, it's at 
 - **Project 1 → Project 5** — the dashboard renders the InSAR PS dataset and lets a non-GIS stakeholder explore it without code.
 - **Project 2 → Project 4 (potential)** — café-suitability adjusted for flood exposure. Drop top-20 candidates that fall inside a high-risk band. Both pipelines exist; 1-day join.
 - **Project 10 → Project 14 (H3 stack reuse)** — the H3 hex aggregator + DuckDB pipeline from NYC taxi was re-used at res-8 for the Singapore Strait AIS density map. Two completely different domains, one indexing recipe.
+- **Project 7 + 16 (Sentinel-2 STAC reuse)** — the cloud-free composite pipeline from Bengaluru LULC fed the NDVI side of the Tokyo UHI analysis. Add a thermal band and you have a totally different study area.
 
 ---
 
@@ -86,17 +89,18 @@ NN-<project>/
 
 ```bash
 pip install osmnx geopandas folium matplotlib scipy networkx     # used in #2 #3 #4 #6 #8
-pip install rasterio                                              # #4 #7
+pip install rasterio                                              # #4 #7 #16
 pip install ortools                                               # #3
 pip install ultralytics opencv-python pillow                      # #6
-pip install scikit-learn pystac-client                            # #7 #15
+pip install scikit-learn pystac-client                            # #7 #15 #16
 pip install h3 duckdb pyarrow                                     # #10 #14
 pip install pvlib py3dep                                          # #12
+pip install scikit-image                                          # #17
 ```
 
 Project #5 (web dashboard) needs no install — open `05-web-gis-dashboard/index.html` over `python -m http.server` and you're done.
 
-Projects #11-#15 each ship with a procedural data generator (`scripts/_make_dashboard_data.py`) that runs offline in plain Python 3.14 — no API keys needed for the dashboard demo. The real pipelines in each project's main script document the live-data path (S1/S2 STAC, MarineTraffic AIS, etc.) for when you want to swap in production data.
+Projects #11-#17 each ship with a procedural data generator (`scripts/_make_dashboard_data.py`) that runs offline in plain Python 3.14 — no API keys needed for the dashboard demo. The real pipelines in each project's main script document the live-data path (S1/S2 STAC, Landsat thermal, MarineTraffic AIS, etc.) for when you want to swap in production data.
 
 Project #1 (InSAR pilot) is the only one whose **full** pipeline doesn't fit in this repo (it requires a Sentinel-1 SLC stack on EC2) — what's here is the headline deliverable, sample data, and writeup; the working pipeline lives in a separate repo.
 
