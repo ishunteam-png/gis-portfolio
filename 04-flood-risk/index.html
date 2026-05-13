@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Jakarta Compound Flood Risk — Critical Infra Dashboard</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<style>
+:root {
+  --bg:#0f1419; --panel:#1a1f29; --panel-2:#232a36;
+  --line:#2d3441; --fg:#e7ecf3; --fg-dim:#98a2b3;
+  --accent:#4dabf7;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+     color:var(--fg);background:var(--bg);
+     display:grid;grid-template-rows:60px 1fr;grid-template-columns:330px 1fr}
+header{grid-column:1/3;background:var(--panel);border-bottom:1px solid var(--line);
+       display:flex;align-items:center;padding:0 20px;gap:16px}
+header h1{margin:0;font-size:16px;font-weight:600}
+header h1 .sub{color:var(--fg-dim);font-weight:400;margin-left:8px;font-size:13px}
+header .stats{margin-left:auto;display:flex;gap:10px}
+.stat{background:var(--panel-2);padding:5px 12px;border-radius:6px;border:1px solid var(--line);min-width:80px}
+.stat .lbl{color:var(--fg-dim);font-size:10px;text-transform:uppercase;letter-spacing:1px}
+.stat .val{color:var(--fg);font-size:15px;font-weight:600}
+aside{background:var(--panel);border-right:1px solid var(--line);padding:14px 16px;overflow-y:auto}
+aside h2{margin:16px 0 8px;font-size:11px;font-weight:600;color:var(--fg-dim);
+         text-transform:uppercase;letter-spacing:1.4px}
+aside h2:first-of-type{margin-top:0}
+.field{margin-bottom:10px}
+.field input[type="range"]{width:100%;background:var(--panel-2);accent-color:var(--accent)}
+.range-row{display:flex;align-items:center;gap:8px}
+.range-row .v{font-size:12px;width:50px;text-align:right}
+.type-chip{display:inline-flex;align-items:center;gap:6px;background:var(--panel-2);
+           border:1px solid var(--line);border-radius:6px;padding:5px 9px;cursor:pointer;
+           font-size:12px;user-select:none;margin:0 4px 4px 0}
+.type-chip:hover{border-color:var(--accent)}
+.type-chip.off{opacity:0.4}
+.type-chip .swatch{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+#map{width:100%;height:100%;background:#0a0e14}
+.leaflet-tile{filter:grayscale(0.15) brightness(0.85)}
+.legend{margin-top:8px;padding:10px;background:var(--panel-2);border-radius:6px;border:1px solid var(--line)}
+.legend-bar{height:12px;border-radius:3px;margin-bottom:4px}
+.legend-ticks{display:flex;justify-content:space-between;font-size:11px;color:var(--fg-dim)}
+.leaflet-popup-content-wrapper{background:var(--panel);color:var(--fg);border:1px solid var(--line);
+   border-radius:7px;box-shadow:0 6px 24px rgba(0,0,0,0.4)}
+.leaflet-popup-tip{background:var(--panel);border:1px solid var(--line)}
+.leaflet-popup-content{font-family:inherit;font-size:12px}
+.leaflet-popup-content table{border-collapse:collapse}
+.leaflet-popup-content td{padding:2px 8px 2px 0}
+.leaflet-popup-content td:first-child{color:var(--fg-dim)}
+.foot{color:var(--fg-dim);font-size:11px;margin-top:18px;line-height:1.55;
+      border-top:1px solid var(--line);padding-top:12px}
+.foot strong{color:var(--fg)}
+.back{display:block;text-align:center;background:var(--panel-2);color:var(--accent);
+      text-decoration:none;padding:8px;border-radius:6px;font-size:12px;
+      border:1px solid var(--line);margin-bottom:14px}
+.back:hover{border-color:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Jakarta Compound Flood Risk<span class="sub">top 150 critical-infrastructure exposures, ranked by HAND + slope + drainage density + imperviousness</span></h1>
+  <div class="stats">
+    <div class="stat"><div class="lbl">Visible</div><div class="val" id="stat-count">—</div></div>
+    <div class="stat"><div class="lbl">Top risk</div><div class="val" id="stat-top">—</div></div>
+    <div class="stat"><div class="lbl">Median</div><div class="val" id="stat-med">—</div></div>
+  </div>
+</header>
+<aside>
+  <a class="back" href="../">← back to portfolio</a>
+
+  <h2>Filter — minimum risk index</h2>
+  <div class="field">
+    <div class="range-row">
+      <input type="range" id="minrisk" min="0.85" max="1" step="0.005" value="0.85"/>
+      <span class="v" id="minrisk-v">0.85</span>
+    </div>
+  </div>
+
+  <h2>Infrastructure type</h2>
+  <div id="type-chips"></div>
+
+  <h2>Legend — compound risk index</h2>
+  <div class="legend">
+    <div class="legend-bar" id="legend-bar"></div>
+    <div class="legend-ticks">
+      <span>0.85</span><span>0.92</span><span>1.00</span>
+    </div>
+  </div>
+
+  <div class="foot">
+    Compound risk = mean of 4 normalised indicators:
+    <strong>HAND</strong> (height above nearest drainage, MERIT 90 m),
+    <strong>slope</strong> (Mapzen 30 m tiles),
+    <strong>drainage density</strong> (OSM waterways within 500 m), and
+    <strong>imperviousness</strong> (OSM building footprint within 250 m).<br><br>
+    Total facilities exposed at risk &ge; 0.85 across the city:
+    <strong>1,360 schools, 138 hospitals/clinics, 270+ fire hydrants</strong>.
+    This map shows the worst 150 by risk index for visual clarity.
+  </div>
+</aside>
+<div id="map"></div>
+
+<script>
+let DATA = null;
+const TYPES = {};
+const TYPE_COLORS = {
+  school: '#fa5252', kindergarten: '#fd7e14', college: '#e64980', university: '#cc5de8',
+  clinic: '#15aabf', hospital: '#1098ad', doctors: '#22b8cf', ambulance_station: '#3bc9db',
+  police: '#4263eb', fire_hydrant: '#e8590c', fire_station: '#fd7e14', fire_extinguisher: '#ff922b',
+  townhall: '#82c91e'
+};
+const state = {minRisk: 0.85, types: new Set()};
+
+function colorFor(r){
+  const t = Math.max(0, Math.min(1, (r - 0.85) / 0.15));
+  const rr = Math.round(254 + (179-254)*t);
+  const gg = Math.round(224 - 224*t);
+  const bb = Math.round(139 - 139*t);
+  return `rgb(${rr},${gg},${bb})`;
+}
+function renderLegend(){
+  const stops=[];
+  for(let i=0;i<=20;i++){
+    const t=i/20;
+    stops.push(colorFor(0.85+0.15*t)+' '+(t*100).toFixed(0)+'%');
+  }
+  document.getElementById('legend-bar').style.background =
+    'linear-gradient(to right, '+stops.join(', ')+')';
+}
+renderLegend();
+
+const map = L.map('map', {zoomControl:true, preferCanvas:true}).setView([-6.20, 106.84], 11);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  {attribution:'&copy; OpenStreetMap &copy; CartoDB', subdomains:'abcd', maxZoom:19}).addTo(map);
+
+let pointLayer = L.layerGroup().addTo(map);
+
+function makeChips(){
+  const chips = document.getElementById('type-chips');
+  chips.innerHTML = '';
+  Object.entries(TYPES).sort((a,b)=>b[1]-a[1]).forEach(([type, count]) => {
+    state.types.add(type);
+    const chip = document.createElement('span');
+    chip.className = 'type-chip';
+    chip.dataset.type = type;
+    chip.innerHTML = `<span class="swatch" style="background:${TYPE_COLORS[type]||'#999'}"></span>${type} (${count})`;
+    chip.addEventListener('click', () => {
+      if(state.types.has(type)){ state.types.delete(type); chip.classList.add('off'); }
+      else { state.types.add(type); chip.classList.remove('off'); }
+      rebuild();
+    });
+    chips.appendChild(chip);
+  });
+}
+
+function popupHtml(p){
+  return `<table>
+    <tr><td>Type</td><td><strong>${p.type}</strong></td></tr>
+    ${p.name ? `<tr><td>Name</td><td>${p.name}</td></tr>` : ''}
+    <tr><td>Risk index</td><td><strong>${p.risk_idx.toFixed(3)}</strong></td></tr>
+    <tr><td>Risk band</td><td>${p.risk_label}</td></tr>
+  </table>`;
+}
+
+function rebuild(){
+  if(!DATA) return;
+  pointLayer.clearLayers();
+  document.getElementById('minrisk-v').textContent = state.minRisk.toFixed(3);
+
+  const visible = DATA.features.filter(f =>
+    f.properties.risk_idx >= state.minRisk && state.types.has(f.properties.type));
+
+  visible.forEach(f => {
+    const c = f.geometry.coordinates;
+    const p = f.properties;
+    L.circleMarker([c[1], c[0]], {
+      radius: 5 + 6 * (p.risk_idx - 0.85)/0.15,
+      color: '#000', weight: 0.8,
+      fillColor: colorFor(p.risk_idx), fillOpacity: 0.85
+    }).bindPopup(popupHtml(p)).addTo(pointLayer);
+  });
+
+  document.getElementById('stat-count').textContent = visible.length;
+  if(visible.length){
+    const sorted = visible.map(f=>f.properties.risk_idx).sort((a,b)=>b-a);
+    document.getElementById('stat-top').textContent = sorted[0].toFixed(3);
+    document.getElementById('stat-med').textContent = sorted[Math.floor(sorted.length/2)].toFixed(3);
+  } else {
+    document.getElementById('stat-top').textContent = '—';
+    document.getElementById('stat-med').textContent = '—';
+  }
+}
+
+document.getElementById('minrisk').addEventListener('input', e => {
+  state.minRisk = +e.target.value; rebuild();
+});
+
+fetch('dashboard_data.json').then(r=>r.json()).then(d => {
+  DATA = d;
+  DATA.features.forEach(f => {
+    const t = f.properties.type;
+    TYPES[t] = (TYPES[t] || 0) + 1;
+  });
+  makeChips();
+  rebuild();
+  const bb = L.latLngBounds(DATA.features.map(f => [f.geometry.coordinates[1], f.geometry.coordinates[0]]));
+  map.fitBounds(bb, {padding:[40,40]});
+}).catch(err => {
+  document.body.insertAdjacentHTML('beforeend',
+    '<div style="position:fixed;top:60px;left:340px;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:#888;background:rgba(15,20,25,0.85);z-index:600;font-size:14px;">Could not load dashboard_data.json. Serve over HTTP.</div>');
+  console.error(err);
+});
+</script>
+</body>
+</html>
