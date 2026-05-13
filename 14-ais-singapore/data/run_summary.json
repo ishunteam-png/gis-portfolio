@@ -1,0 +1,20 @@
+{
+  "city": "Singapore Strait",
+  "aoi_bbox": [
+    103.55,
+    1.05,
+    104.25,
+    1.32
+  ],
+  "snapshot_hour": "2024-03-15T08:00 SGT",
+  "n_vessels": 978,
+  "n_anchored": 200,
+  "n_anchorages": 8,
+  "mean_dwell_h": 25.8,
+  "annual_transits_est": 84000,
+  "hex_resolution": "H3 res-8",
+  "red_sea_crisis_window": "Jan-Apr 2024",
+  "peak_backlog_pct_vs_baseline": 18.0,
+  "method": "AIS hourly snapshot -> H3 binning + DBSCAN(eps=400m,min=5) for anchorages",
+  "data_source": "MarineTraffic / Spire AIS . MPA Q1 2024 . IMO + UNCTAD vessel register"
+}
