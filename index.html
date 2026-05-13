@@ -35,6 +35,10 @@ h1 { font-size: 32px; margin: 0 0 8px; font-weight: 700; }
 .card p { margin: 0; color: var(--fg-dim); font-size: 13px; line-height: 1.5; }
 .card .stack { margin-top: 12px; color: var(--accent); font-size: 11px; font-weight: 600;
                letter-spacing: 0.4px; }
+.card .actions { margin-top: 14px; display: flex; gap: 8px; font-size: 12px; }
+.card .actions a { color: var(--fg-dim); text-decoration: none; padding: 4px 10px;
+                   border-radius: 4px; background: rgba(255,255,255,0.03); border: 1px solid var(--line); }
+.card .actions a:hover { color: var(--accent); border-color: var(--accent); }
 footer { margin-top: 48px; color: var(--fg-dim); font-size: 13px; line-height: 1.7;
          border-top: 1px solid var(--line); padding-top: 24px; }
 footer a { color: var(--accent); text-decoration: none; }
@@ -48,59 +52,86 @@ footer a { color: var(--accent); text-decoration: none; }
 
 <h1>GIS / Geospatial Portfolio — ISHU</h1>
 <p class="tagline">Six end-to-end projects covering InSAR remote sensing, location intelligence,
-   route optimization, compound flood modelling, web mapping, and GeoAI.</p>
+   route optimization, compound flood modelling, web mapping, and GeoAI.
+   Every project has an <strong>interactive dashboard</strong> built from scratch — click any card to launch it.</p>
 
-<a class="cta" href="05-web-gis-dashboard/">🚀 Launch interactive dashboard (Delhi InSAR)</a>
+<a class="cta" href="05-web-gis-dashboard/">🚀 Launch the flagship dashboard (Delhi InSAR)</a>
 
 <div class="grid">
 
-  <a class="card" href="https://github.com/ishunteam-png/gis-portfolio/tree/main/01-insar-road-subsidence">
-    <div class="num">PROJECT 1</div>
+  <a class="card" href="01-insar-road-subsidence/">
+    <div class="num">PROJECT 1<span class="live">DASHBOARD</span></div>
     <h3>InSAR Road Subsidence — Delhi</h3>
-    <p>Strict EGMS-L3 Sentinel-1 InSAR pilot · 2,555 PS · V_U −10.3 to +4.7 mm/yr · true 2D vertical + east-west decomposition · $1 AWS cost.</p>
+    <p>Strict EGMS-L3 Sentinel-1 InSAR pilot · 2,555 PS · V_U −10.3 to +4.7 mm/yr · true 2D vertical + east-west decomposition. Dashboard with velocity threshold filter, temporal coherence gate, and live histogram.</p>
     <div class="stack">Sentinel-1 · MintPy · SNAP · PyAPS3</div>
+    <div class="actions">
+      <a href="01-insar-road-subsidence/">🗺️ dashboard</a>
+      <a href="https://github.com/ishunteam-png/gis-portfolio/tree/main/01-insar-road-subsidence">📄 source</a>
+    </div>
   </a>
 
-  <a class="card" href="https://github.com/ishunteam-png/gis-portfolio/tree/main/02-real-estate-intel">
-    <div class="num">PROJECT 2</div>
+  <a class="card" href="02-real-estate-intel/">
+    <div class="num">PROJECT 2<span class="live">DASHBOARD</span></div>
     <h3>Café Location Intelligence — Tbilisi</h3>
-    <p>8,415 cells over 504 km² · 5 signals incl. walkability (62,849 intersections) · validated Spearman ρ = 0.39 vs real cafés.</p>
-    <div class="stack">OSMnx · GeoPandas · scipy.stats · Folium</div>
+    <p>8,415 cells over 504 km² · 5 signals incl. walkability (62,849 intersections) · validated Spearman ρ = 0.39. Dashboard shows top 100 cells with suitability filter and top-20 ring overlay.</p>
+    <div class="stack">OSMnx · GeoPandas · scipy.stats · Leaflet</div>
+    <div class="actions">
+      <a href="02-real-estate-intel/">🗺️ dashboard</a>
+      <a href="https://github.com/ishunteam-png/gis-portfolio/tree/main/02-real-estate-intel">📄 source</a>
+    </div>
   </a>
 
-  <a class="card" href="https://github.com/ishunteam-png/gis-portfolio/tree/main/03-route-optimization">
-    <div class="num">PROJECT 3</div>
+  <a class="card" href="03-route-optimization/">
+    <div class="num">PROJECT 3<span class="live">DASHBOARD</span></div>
     <h3>Advanced VRP with Time Windows</h3>
-    <p>60 stops · 5 vehicles · 3 algorithms compared (greedy / Clarke-Wright 1964 / OR-Tools GLS) · OR-Tools −20.3 % vs greedy · sensitivity sweep.</p>
+    <p>60 stops · 5 vehicles · 3 algorithms compared (greedy / Clarke-Wright 1964 / OR-Tools GLS) · OR-Tools −20.3 % vs greedy. Dashboard lets you toggle between algorithms on the same map.</p>
     <div class="stack">OSMnx · NetworkX · OR-Tools</div>
+    <div class="actions">
+      <a href="03-route-optimization/">🗺️ dashboard</a>
+      <a href="https://github.com/ishunteam-png/gis-portfolio/tree/main/03-route-optimization">📄 source</a>
+    </div>
   </a>
 
-  <a class="card" href="https://github.com/ishunteam-png/gis-portfolio/tree/main/04-flood-risk">
-    <div class="num">PROJECT 4</div>
+  <a class="card" href="04-flood-risk/">
+    <div class="num">PROJECT 4<span class="live">DASHBOARD</span></div>
     <h3>Jakarta Compound Flood Risk</h3>
-    <p>World's most flood-prone megacity · 4-factor risk index (HAND + slope + drainage density + imperviousness) · 1,360 schools + 138 hospitals exposed.</p>
+    <p>World's most flood-prone megacity · 4-factor risk index (HAND + slope + drainage density + imperviousness) · 1,360 schools + 138 hospitals exposed. Dashboard with infra-type chips and risk threshold filter.</p>
     <div class="stack">rasterio · scipy.ndimage · OSMnx</div>
+    <div class="actions">
+      <a href="04-flood-risk/">🗺️ dashboard</a>
+      <a href="https://github.com/ishunteam-png/gis-portfolio/tree/main/04-flood-risk">📄 source</a>
+    </div>
   </a>
 
   <a class="card" href="05-web-gis-dashboard/">
-    <div class="num">PROJECT 5<span class="live">LIVE</span></div>
+    <div class="num">PROJECT 5<span class="live">DASHBOARD</span></div>
     <h3>Web GIS Dashboard — Delhi PS</h3>
     <p>Single-file Leaflet · 6 presets, split view, live histogram, URL hash state for shareable views. ~480 lines vanilla JS.</p>
     <div class="stack">Leaflet · Chroma.js · vanilla JS</div>
+    <div class="actions">
+      <a href="05-web-gis-dashboard/">🗺️ dashboard</a>
+      <a href="https://github.com/ishunteam-png/gis-portfolio/tree/main/05-web-gis-dashboard">📄 source</a>
+    </div>
   </a>
 
-  <a class="card" href="https://github.com/ishunteam-png/gis-portfolio/tree/main/06-geoai-road-damage">
-    <div class="num">PROJECT 6</div>
+  <a class="card" href="06-geoai-road-damage/">
+    <div class="num">PROJECT 6<span class="live">DASHBOARD</span></div>
     <h3>GeoAI Road Damage + Project 1 Join</h3>
-    <p>YOLOv8m-seg · mask-area severity · all 4 detections land on subsiding PS — operationalises the InSAR→damage causal chain.</p>
+    <p>YOLOv8m-seg · mask-area severity · all 4 detections land on subsiding PS — operationalises the InSAR→damage causal chain. Dashboard shows the join lines between detections and nearest PS.</p>
     <div class="stack">ultralytics · PyTorch · OpenCV</div>
+    <div class="actions">
+      <a href="06-geoai-road-damage/">🗺️ dashboard</a>
+      <a href="https://github.com/ishunteam-png/gis-portfolio/tree/main/06-geoai-road-damage">📄 source</a>
+    </div>
   </a>
 
 </div>
 
 <footer>
   Source repo: <a href="https://github.com/ishunteam-png/gis-portfolio">github.com/ishunteam-png/gis-portfolio</a><br>
-  Each project folder has its own README with the full methodology, approach diagram, results, validation, and a "what I'd build next" section.<br><br>
+  Every project folder has its own README with the full methodology, approach, results, validation,
+  and a "what I'd build next" section. Everything was built and run manually on my own laptop —
+  no cloud compute, no managed services.<br><br>
   Contact: singhishu2060@gmail.com
 </footer>
 
