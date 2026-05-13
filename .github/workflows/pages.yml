@@ -15,7 +15,31 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  enable:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enable GitHub Pages (source = Actions)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          # Try to create Pages config (build_type=workflow). If Pages is already
+          # enabled, the POST 409s — fall back to PUT to update the source.
+          set +e
+          STATUS=$(gh api -X POST "repos/$REPO/pages" \
+            -f build_type=workflow \
+            --silent -i 2>&1 | head -1 | awk '{print $2}')
+          echo "POST status: $STATUS"
+          if [ "$STATUS" = "409" ] || [ "$STATUS" = "422" ]; then
+            echo "Pages already enabled — updating source to Actions"
+            gh api -X PUT "repos/$REPO/pages" \
+              -f build_type=workflow || true
+          fi
+          echo "Pages config now:"
+          gh api "repos/$REPO/pages" || true
+
   deploy:
+    needs: enable
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
