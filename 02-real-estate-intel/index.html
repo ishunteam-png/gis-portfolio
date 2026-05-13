@@ -120,8 +120,8 @@ aside h2:first-of-type{margin-top:0}
 <div id="map"></div>
 
 <script>
-// === INLINE DATA: top 100 suitability cells ===
-const DATA = /*DATA_PLACEHOLDER*/null;
+// === Data is loaded from dashboard_data.json (kept separate to keep this file small) ===
+let DATA = null;
 
 // === colour ramp ===
 function colorFor(s){
@@ -165,12 +165,12 @@ function popupHtml(p, rank){
 }
 
 function rebuild(){
+  if(!DATA) return;
   cellLayer.clearLayers();
   labelLayer.clearLayers();
   topRingLayer.clearLayers();
   document.getElementById('minscore-v').textContent = state.minScore.toFixed(2);
 
-  // Sort by suitability descending so rank is consistent
   const ranked = [...DATA.features].sort((a,b)=>b.properties.suitability-a.properties.suitability);
   const visible = ranked.filter(f => f.properties.suitability >= state.minScore);
 
@@ -200,7 +200,6 @@ function rebuild(){
     }
   });
 
-  // Stats
   document.getElementById('stat-count').textContent = visible.length;
   if(visible.length){
     const scores = visible.map(f=>f.properties.suitability);
@@ -228,15 +227,9 @@ document.getElementById('labels-toggle').addEventListener('click', e => {
   rebuild();
 });
 
-// Fetch data and initial render
 fetch('dashboard_data.json').then(r=>r.json()).then(d => {
-  window.__data = d;
-  // Inject as DATA
-  Object.assign({}, DATA);  // no-op; we just reassign via eval
-  // hacky: use globalThis
-  eval('DATA = window.__data');
+  DATA = d;
   rebuild();
-  // Fit bounds
   const all = DATA.features.flatMap(f => f.geometry.coordinates[0].map(c=>[c[1],c[0]]));
   map.fitBounds(all, {padding:[40,40]});
 }).catch(err => {
