@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Iowa Crop Classification — S1+S2 Fusion</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<style>
+:root { --bg:#0f1419; --panel:#1a1f29; --panel-2:#232a36; --line:#2d3441;
+        --fg:#e7ecf3; --fg-dim:#98a2b3; --accent:#4dabf7; --green:#51cf66; --red:#ff6b6b; --gold:#ffd43b; }
+*{box-sizing:border-box} html,body{height:100%;margin:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+     color:var(--fg);background:var(--bg);
+     display:grid;grid-template-rows:60px 1fr;grid-template-columns:360px 1fr}
+header{grid-column:1/3;background:var(--panel);border-bottom:1px solid var(--line);
+       display:flex;align-items:center;padding:0 20px;gap:16px}
+header h1{margin:0;font-size:16px;font-weight:600}
+header h1 .sub{color:var(--fg-dim);font-weight:400;margin-left:8px;font-size:13px}
+header .stats{margin-left:auto;display:flex;gap:10px}
+.stat{background:var(--panel-2);padding:5px 12px;border-radius:6px;
+      border:1px solid var(--line);min-width:90px}
+.stat .lbl{color:var(--fg-dim);font-size:10px;text-transform:uppercase;letter-spacing:1px}
+.stat .val{color:var(--fg);font-size:15px;font-weight:600}
+.stat .val.good{color:#69db7c}
+aside{background:var(--panel);border-right:1px solid var(--line);padding:14px 16px;overflow-y:auto}
+aside h2{margin:16px 0 8px;font-size:11px;font-weight:600;color:var(--fg-dim);
+         text-transform:uppercase;letter-spacing:1.4px}
+aside h2:first-of-type{margin-top:0}
+.model-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px}
+.btn{background:var(--panel-2);border:1px solid var(--line);padding:8px 4px;
+     text-align:center;font-size:11px;font-weight:600;border-radius:5px;
+     cursor:pointer;color:var(--fg-dim);user-select:none;line-height:1.3}
+.btn .acc{display:block;font-size:14px;color:var(--fg);margin-top:3px}
+.btn:hover{border-color:var(--accent)}
+.btn.on{border-color:var(--accent);background:rgba(77,171,247,0.12);color:var(--fg)}
+.btn.on.fusion{border-color:#51cf66;background:rgba(81,207,102,0.15)}
+.btn.on .acc{color:var(--gold)}
+.class-row{display:flex;align-items:center;gap:8px;font-size:12.5px;
+           padding:5px 9px;background:var(--panel-2);border:1px solid var(--line);
+           border-radius:5px;margin-bottom:3px;cursor:pointer;user-select:none}
+.class-row.off{opacity:0.32}
+.class-row:hover{border-color:var(--accent)}
+.class-row .sw{width:14px;height:14px;border-radius:3px;flex:0 0 auto}
+.class-row .nm{flex:1}
+.class-row .pct{color:var(--fg-dim);font-size:11px;font-family:ui-monospace,Menlo,Consolas,monospace}
+.acc-block{background:var(--panel-2);border:1px solid var(--line);padding:10px;border-radius:6px;
+           font-size:12px;line-height:1.6}
+.acc-block .row{display:flex;justify-content:space-between;margin-bottom:3px}
+.acc-block .row strong{color:var(--fg)}
+.acc-block .lift{color:#51cf66;font-weight:700}
+#map{width:100%;height:100%;background:#0a0e14}
+.leaflet-tile{filter:grayscale(0.20) brightness(0.78)}
+.leaflet-popup-content-wrapper{background:var(--panel);color:var(--fg);border:1px solid var(--line);
+   border-radius:7px;box-shadow:0 6px 24px rgba(0,0,0,0.4)}
+.leaflet-popup-tip{background:var(--panel);border:1px solid var(--line)}
+.leaflet-popup-content{font-family:inherit;font-size:12px;min-width:200px}
+.leaflet-popup-content table{border-collapse:collapse;width:100%}
+.leaflet-popup-content td{padding:2px 8px 2px 0}
+.foot{color:var(--fg-dim);font-size:11px;margin-top:18px;line-height:1.55;
+      border-top:1px solid var(--line);padding-top:12px}
+.foot a{color:var(--accent);text-decoration:none}
+.back{display:block;text-align:center;background:var(--panel-2);color:var(--accent);
+      text-decoration:none;padding:8px;border-radius:6px;font-size:12px;
+      border:1px solid var(--line);margin-bottom:14px}
+.back:hover{border-color:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Iowa Crop Classification<span class="sub">Story County · S1 + S2 fusion vs single-sensor · CDL ground truth · 672 cells</span></h1>
+  <div class="stats">
+    <div class="stat"><div class="lbl">Model</div><div class="val" id="stat-model">S1+S2</div></div>
+    <div class="stat"><div class="lbl">Overall acc.</div><div class="val good" id="stat-oa">92.7%</div></div>
+    <div class="stat"><div class="lbl">vs S2-only</div><div class="val good" id="stat-lift">+6.4%</div></div>
+    <div class="stat"><div class="lbl">Features</div><div class="val" id="stat-feat">8</div></div>
+  </div>
+</header>
+<aside>
+  <a class="back" href="../">← back to portfolio</a>
+
+  <h2>Model</h2>
+  <div class="model-row">
+    <div class="btn" data-model="s1_only">S1 only<span class="acc" id="acc-s1">—</span></div>
+    <div class="btn" data-model="s2_only">S2 only<span class="acc" id="acc-s2">—</span></div>
+    <div class="btn on fusion" data-model="s1_s2">S1+S2<span class="acc" id="acc-fusion">—</span></div>
+  </div>
+
+  <h2 id="view-title">View: Predicted class</h2>
+  <div class="model-row" style="grid-template-columns:1fr 1fr">
+    <div class="btn on" data-view="pred">Predicted</div>
+    <div class="btn" data-view="truth">Ground truth</div>
+  </div>
+
+  <h2>Classes — click to toggle</h2>
+  <div id="classes"></div>
+
+  <h2>Selected model — accuracy</h2>
+  <div class="acc-block" id="acc-block">—</div>
+
+  <div class="foot">
+    <strong>Fusion uplift:</strong> S1+S2 beats S2-only by +6.4% OA. Most of the
+    gain is in the corn↔soybean pair (both classes +4% accuracy in fusion),
+    because radar separates corn's vertical stalks from soy's lower canopy
+    where optical sees both as "dense green".<br><br>
+    Source: Sentinel-1 + Sentinel-2 via Element84 STAC · USDA NASS CDL ·
+    <a href="https://github.com/ishunteam-png/gis-portfolio/tree/main/15-crop-classification">source on GitHub</a>
+  </div>
+</aside>
+<div id="map"></div>
+
+<script>
+let DATA = null;
+let CELLS = null;
+let state = {modelKey: "s1_s2", view: "pred", visible: new Set()};
+
+const map = L.map('map', {zoomControl:true, preferCanvas:true}).setView([42.03, -93.57], 11);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  {attribution:'&copy; OpenStreetMap &copy; CartoDB', subdomains:'abcd', maxZoom:18}).addTo(map);
+
+let cellLayer = L.layerGroup().addTo(map);
+
+function cellBounds(grid, i, j){
+  const {x0, y0, dx, dy} = grid;
+  return [[y0 + j*dy, x0 + i*dx], [y0 + (j+1)*dy, x0 + (i+1)*dx]];
+}
+
+function modelColIdx(){
+  return state.modelKey === "s1_only" ? 4 :
+         state.modelKey === "s2_only" ? 3 : 5;
+}
+
+function popupCell(cell){
+  const [i, j, truth, pS2, pS1, pFusion] = cell;
+  const tt = DATA.class_labels[DATA.classes[truth]];
+  const correct_fusion = pFusion === truth;
+  const correct_s2 = pS2 === truth;
+  const correct_s1 = pS1 === truth;
+  const sw = (k) => `<span style="display:inline-block;width:10px;height:10px;background:${DATA.colors[k]};border-radius:2px;margin-right:5px"></span>`;
+  const mark = (ok) => ok ? '<span style="color:#69db7c">✓</span>' : '<span style="color:#ff6b6b">✗</span>';
+  return `<table>
+    <tr><td><strong>Cell</strong></td><td>(${i}, ${j})</td></tr>
+    <tr><td><strong>Truth (CDL)</strong></td><td>${sw(truth)}<strong>${tt}</strong></td></tr>
+    <tr><td style="border-top:1px solid var(--line);padding-top:4px">S1 only</td><td style="border-top:1px solid var(--line);padding-top:4px">${sw(pS1)}${DATA.class_labels[DATA.classes[pS1]]} ${mark(correct_s1)}</td></tr>
+    <tr><td>S2 only</td><td>${sw(pS2)}${DATA.class_labels[DATA.classes[pS2]]} ${mark(correct_s2)}</td></tr>
+    <tr><td>S1+S2 fusion</td><td>${sw(pFusion)}<strong>${DATA.class_labels[DATA.classes[pFusion]]} ${mark(correct_fusion)}</strong></td></tr>
+  </table>`;
+}
+
+function rebuild(){
+  if(!DATA || !CELLS) return;
+  cellLayer.clearLayers();
+  const g = DATA.grid;
+  const col = state.view === "truth" ? 2 : modelColIdx();
+  CELLS.forEach(cell => {
+    const k = cell[col];
+    const name = DATA.classes[k];
+    if(state.visible.size && !state.visible.has(name)) return;
+    const c = DATA.colors[k];
+    L.rectangle(cellBounds(g, cell[0], cell[1]), {
+      color: c, weight: 0.3, fillColor: c, fillOpacity: 0.7
+    }).bindPopup(popupCell(cell)).addTo(cellLayer);
+  });
+  const m = DATA.models.find(mo => mo.id === state.modelKey);
+  document.getElementById('stat-model').textContent = m.id === "s1_s2" ? "S1+S2" : m.id === "s2_only" ? "S2" : "S1";
+  document.getElementById('stat-oa').textContent = (m.OA_realised * 100).toFixed(1) + '%';
+  document.getElementById('stat-feat').textContent = m.n_features;
+  const s2 = DATA.models.find(mo => mo.id === "s2_only").OA_realised;
+  const lift = (m.OA_realised - s2) * 100;
+  const liftEl = document.getElementById('stat-lift');
+  liftEl.textContent = (lift >= 0 ? '+' : '') + lift.toFixed(1) + '%';
+  liftEl.className = 'val ' + (lift > 0 ? 'good' : '');
+  renderAccBlock();
+}
+
+function renderClassPanel(){
+  const cls = document.getElementById('classes');
+  cls.innerHTML = '';
+  DATA.classes.forEach((c, k) => {
+    const row = document.createElement('div');
+    row.className = 'class-row' + (state.visible.size === 0 || state.visible.has(c) ? '' : ' off');
+    row.innerHTML = `<div class="sw" style="background:${DATA.colors[k]}"></div>
+                     <div class="nm">${DATA.class_labels[c]}</div>
+                     <div class="pct">${DATA.composition_pct[c]}%</div>`;
+    row.addEventListener('click', () => {
+      if(state.visible.has(c)) state.visible.delete(c);
+      else state.visible.add(c);
+      renderClassPanel();
+      rebuild();
+    });
+    cls.appendChild(row);
+  });
+}
+
+function renderAccBlock(){
+  const m = DATA.models.find(mo => mo.id === state.modelKey);
+  const block = document.getElementById('acc-block');
+  block.innerHTML = `
+    <div class="row"><span>Model</span><strong>${m.label}</strong></div>
+    <div class="row"><span>Overall accuracy</span><strong>${(m.OA_realised * 100).toFixed(1)}%</strong></div>
+    <div class="row"><span>Cohen's κ</span><strong>${m.kappa.toFixed(2)}</strong></div>
+    <div class="row"><span>Feature count</span><strong>${m.n_features}</strong></div>
+    <div style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);font-size:11px;color:var(--fg-dim)">
+      Features: ${m.features.join(' · ')}
+    </div>`;
+}
+
+document.querySelectorAll('[data-model]').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('[data-model]').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    state.modelKey = b.dataset.model;
+    rebuild();
+  });
+});
+document.querySelectorAll('[data-view]').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('[data-view]').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    state.view = b.dataset.view;
+    document.getElementById('view-title').textContent = 'View: ' + (state.view === 'truth' ? 'Ground truth (CDL)' : 'Predicted class');
+    rebuild();
+  });
+});
+
+Promise.all([
+  fetch('data/dashboard_data.json').then(r => r.json()),
+  fetch('data/cells.json').then(r => r.json()),
+]).then(([hdr, cellFile]) => {
+  DATA = hdr;
+  CELLS = cellFile.cells;
+  DATA.models.forEach(m => {
+    const tag = m.id === "s1_only" ? "acc-s1" : m.id === "s2_only" ? "acc-s2" : "acc-fusion";
+    document.getElementById(tag).textContent = (m.OA_realised * 100).toFixed(1) + '%';
+  });
+  renderClassPanel();
+  rebuild();
+  map.fitBounds([[DATA.aoi.s, DATA.aoi.w], [DATA.aoi.n, DATA.aoi.e]], {padding:[20, 20]});
+}).catch(err => {
+  document.body.insertAdjacentHTML('beforeend',
+    '<div style="position:fixed;top:60px;left:380px;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:#888;background:rgba(15,20,25,0.85);z-index:600;font-size:14px;">Could not load data files. Serve over HTTP.</div>');
+  console.error(err);
+});
+</script>
+</body>
+</html>
