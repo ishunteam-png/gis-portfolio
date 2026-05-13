@@ -1,0 +1,67 @@
+{
+  "city": "New York City",
+  "aoi": {
+    "w": -74.05,
+    "s": 40.62,
+    "e": -73.74,
+    "n": 40.88
+  },
+  "hex_edge_km": 0.6,
+  "hex_dx_deg": 0.012358592319683157,
+  "hex_dy_deg": 0.008108108108108107,
+  "h3_resolution": 9,
+  "data_source": "NYC TLC Yellow Taxi Trip Records (Jan 2024) — indexed with h3-py",
+  "metrics": [
+    "trips_origin",
+    "trips_dest",
+    "avg_fare",
+    "avg_duration"
+  ],
+  "metric_labels": {
+    "trips_origin": "Trips originating",
+    "trips_dest": "Trips terminating",
+    "net_flow": "Net flow (origin − dest)",
+    "avg_fare": "Average fare (USD)",
+    "avg_duration": "Average duration (min)"
+  },
+  "time_slots": [
+    "all",
+    "am",
+    "midday",
+    "pm",
+    "night"
+  ],
+  "time_labels": {
+    "all": "All day",
+    "am": "AM peak (06–10)",
+    "midday": "Midday (10–16)",
+    "pm": "PM peak (16–20)",
+    "night": "Night (20–06)"
+  },
+  "totals": {
+    "all": {
+      "trips_origin": 57295,
+      "trips_dest": 53847
+    },
+    "am": {
+      "trips_origin": 14953,
+      "trips_dest": 11852
+    },
+    "midday": {
+      "trips_origin": 13511,
+      "trips_dest": 12656
+    },
+    "pm": {
+      "trips_origin": 20295,
+      "trips_dest": 22677
+    },
+    "night": {
+      "trips_origin": 5568,
+      "trips_dest": 5530
+    }
+  },
+  "n_hexes": 200,
+  "data_files": {
+    "hexes": "data/hexes.json"
+  }
+}
