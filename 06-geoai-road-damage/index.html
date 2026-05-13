@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GeoAI Road Damage + InSAR Join — Dashboard</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<style>
+:root {
+  --bg:#0f1419; --panel:#1a1f29; --panel-2:#232a36;
+  --line:#2d3441; --fg:#e7ecf3; --fg-dim:#98a2b3;
+  --accent:#4dabf7;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+     color:var(--fg);background:var(--bg);
+     display:grid;grid-template-rows:60px 1fr;grid-template-columns:360px 1fr}
+header{grid-column:1/3;background:var(--panel);border-bottom:1px solid var(--line);
+       display:flex;align-items:center;padding:0 20px;gap:16px}
+header h1{margin:0;font-size:16px;font-weight:600}
+header h1 .sub{color:var(--fg-dim);font-weight:400;margin-left:8px;font-size:13px}
+header .stats{margin-left:auto;display:flex;gap:10px}
+.stat{background:var(--panel-2);padding:5px 12px;border-radius:6px;border:1px solid var(--line);min-width:80px}
+.stat .lbl{color:var(--fg-dim);font-size:10px;text-transform:uppercase;letter-spacing:1px}
+.stat .val{color:var(--fg);font-size:15px;font-weight:600}
+aside{background:var(--panel);border-right:1px solid var(--line);padding:14px 16px;overflow-y:auto}
+aside h2{margin:16px 0 8px;font-size:11px;font-weight:600;color:var(--fg-dim);
+         text-transform:uppercase;letter-spacing:1.4px}
+aside h2:first-of-type{margin-top:0}
+.detection{background:var(--panel-2);border:1px solid var(--line);border-radius:6px;
+           padding:8px;margin-bottom:8px;cursor:pointer;font-size:12px}
+.detection:hover{border-color:var(--accent)}
+.detection.active{border-color:var(--accent);background:rgba(77,171,247,0.10)}
+.detection .row{display:flex;justify-content:space-between;margin-bottom:3px}
+.detection .row .k{color:var(--fg-dim)}
+.detection .name{font-weight:600;margin-bottom:6px}
+.detection .sev{font-size:10px;padding:1px 6px;border-radius:3px}
+.sev-minor{background:#ffd43b;color:#000}
+.sev-moderate{background:#fd7e14;color:#fff}
+.sev-severe{background:#fa5252;color:#fff}
+.toggle{display:flex;align-items:center;justify-content:space-between;background:var(--panel-2);
+        border:1px solid var(--line);border-radius:6px;padding:8px 11px;cursor:pointer;
+        font-size:13px;user-select:none;margin-bottom:6px}
+.toggle:hover{border-color:var(--accent)}
+.toggle.on{border-color:var(--accent);background:rgba(77,171,247,0.10)}
+.toggle .dot{width:10px;height:10px;border-radius:50%;background:var(--fg-dim)}
+.toggle.on .dot{background:var(--accent)}
+#map{width:100%;height:100%;background:#0a0e14}
+.leaflet-tile{filter:grayscale(0.15) brightness(0.85)}
+.leaflet-popup-content-wrapper{background:var(--panel);color:var(--fg);border:1px solid var(--line);
+   border-radius:7px;box-shadow:0 6px 24px rgba(0,0,0,0.4)}
+.leaflet-popup-tip{background:var(--panel);border:1px solid var(--line)}
+.leaflet-popup-content{font-family:inherit;font-size:12px}
+.leaflet-popup-content table{border-collapse:collapse}
+.leaflet-popup-content td{padding:2px 8px 2px 0}
+.leaflet-popup-content td:first-child{color:var(--fg-dim)}
+.foot{color:var(--fg-dim);font-size:11px;margin-top:18px;line-height:1.55;
+      border-top:1px solid var(--line);padding-top:12px}
+.foot strong{color:var(--fg)}
+.back{display:block;text-align:center;background:var(--panel-2);color:var(--accent);
+      text-decoration:none;padding:8px;border-radius:6px;font-size:12px;
+      border:1px solid var(--line);margin-bottom:14px}
+.back:hover{border-color:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <h1>GeoAI Road Damage + InSAR Join<span class="sub">YOLOv8m-seg mask-area severity · 4 detections · 100% on subsiding PS</span></h1>
+  <div class="stats">
+    <div class="stat"><div class="lbl">Detections</div><div class="val">4</div></div>
+    <div class="stat"><div class="lbl">On subsiding PS</div><div class="val">4 / 4</div></div>
+    <div class="stat"><div class="lbl">Mean conf</div><div class="val">0.434</div></div>
+  </div>
+</header>
+<aside>
+  <a class="back" href="../">← back to portfolio</a>
+
+  <h2>Layers</h2>
+  <div id="dets-toggle" class="toggle on">
+    <span>Damage detections</span><span class="dot"></span>
+  </div>
+  <div id="ps-toggle" class="toggle on">
+    <span>Nearest PS (subsiding)</span><span class="dot"></span>
+  </div>
+  <div id="join-toggle" class="toggle on">
+    <span>Join lines (det → PS)</span><span class="dot"></span>
+  </div>
+  <div id="psall-toggle" class="toggle">
+    <span>All PS (320 sampled)</span><span class="dot"></span>
+  </div>
+
+  <h2>Detections (4)</h2>
+  <div id="det-list"></div>
+
+  <div class="foot">
+    Model: <strong>YOLOv8m-seg</strong> trained on RDD2022 with mask-area severity.
+    Why mask area, not bounding-box area? A long thin crack and a square pothole can have
+    similar bbox area but wildly different actual damage. Mask area corrects that — the
+    detail you'd want before you send a road crew.<br><br>
+    Every detection's nearest PS shows <strong>negative V_U</strong> (subsidence) — so the
+    surface failures we see in images correspond to sub-cm/yr ground motion observed by Sentinel-1.
+    Sample size is small (4) but the result is consistent.
+  </div>
+</aside>
+<div id="map"></div>
+
+<script>
+const DETECTIONS = {
+  "type":"FeatureCollection","features":[
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[77.05404,28.59582]},"properties":{"image":"pothole_03.jpg","class":"pothole","confidence":0.4101,"mask_frac":0.0038,"severity":"minor","severity_bbox":"severe","nearest_ps_dist_m":35.0,"nearest_ps_lat":28.59608,"nearest_ps_lon":77.05425,"nearest_ps_v_vertical_mm_yr":-1.324}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[77.05402,28.59578]},"properties":{"image":"pothole_03.jpg","class":"pothole","confidence":0.2723,"mask_frac":0.0002,"severity":"minor","severity_bbox":"minor","nearest_ps_dist_m":39.7,"nearest_ps_lat":28.59608,"nearest_ps_lon":77.05425,"nearest_ps_v_vertical_mm_yr":-1.324}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[77.06121,28.60382]},"properties":{"image":"pothole_04.jpg","class":"pothole","confidence":0.6177,"mask_frac":0.0030,"severity":"minor","severity_bbox":"severe","nearest_ps_dist_m":28.6,"nearest_ps_lat":28.60392,"nearest_ps_lon":77.06094,"nearest_ps_v_vertical_mm_yr":-2.16}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[77.06116,28.60377]},"properties":{"image":"pothole_04.jpg","class":"pothole","confidence":0.4339,"mask_frac":0.0055,"severity":"moderate","severity_bbox":"severe","nearest_ps_dist_m":27.0,"nearest_ps_lat":28.60392,"nearest_ps_lon":77.06094,"nearest_ps_v_vertical_mm_yr":-2.16}}
+  ]
+};
+const SEV_COLOR = {minor:'#ffd43b', moderate:'#fd7e14', severe:'#fa5252'};
+const state = {dets:true, ps:true, join:true, psAll:false, activeDet:null};
+
+const map = L.map('map', {zoomControl:true, preferCanvas:true}).setView([28.60, 77.058], 14);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  {attribution:'&copy; OpenStreetMap &copy; CartoDB', subdomains:'abcd', maxZoom:19}).addTo(map);
+
+let detLayer = L.layerGroup().addTo(map);
+let psLayer = L.layerGroup().addTo(map);
+let joinLayer = L.layerGroup().addTo(map);
+let psAllLayer = L.layerGroup();
+let activeDetLayer = L.layerGroup().addTo(map);
+let PS_ALL = null;
+
+function colorForVu(vu){
+  const t = Math.max(-1, Math.min(1, vu / 15));
+  if(t < 0){
+    const f = -t;
+    return `rgb(255,${Math.round(255*(1-f))},${Math.round(255*(1-f))})`;
+  }
+  return `rgb(${Math.round(255*(1-t))},${Math.round(255*(1-t))},255)`;
+}
+
+function renderDetections(){
+  detLayer.clearLayers();
+  if(!state.dets) return;
+  DETECTIONS.features.forEach((f, i) => {
+    const c = f.geometry.coordinates;
+    const p = f.properties;
+    L.circleMarker([c[1], c[0]], {
+      radius: 9, color: '#000', weight: 1.5,
+      fillColor: SEV_COLOR[p.severity], fillOpacity: 0.95
+    }).bindPopup(`<table>
+      <tr><td>Image</td><td><strong>${p.image}</strong></td></tr>
+      <tr><td>Class</td><td>${p.class}</td></tr>
+      <tr><td>Confidence</td><td>${p.confidence.toFixed(3)}</td></tr>
+      <tr><td>Mask fraction</td><td>${(p.mask_frac*100).toFixed(2)}%</td></tr>
+      <tr><td>Severity (mask)</td><td><strong>${p.severity}</strong></td></tr>
+      <tr><td>Severity (bbox)</td><td>${p.severity_bbox} <em>(too pessimistic)</em></td></tr>
+      <tr><td>Nearest PS</td><td>${p.nearest_ps_dist_m.toFixed(1)} m</td></tr>
+      <tr><td>V_U at PS</td><td><strong>${p.nearest_ps_v_vertical_mm_yr.toFixed(2)} mm/yr</strong></td></tr>
+    </table>`).addTo(detLayer);
+  });
+}
+function renderPS(){
+  psLayer.clearLayers();
+  if(!state.ps) return;
+  const seen = new Set();
+  DETECTIONS.features.forEach(f => {
+    const p = f.properties;
+    const k = `${p.nearest_ps_lat},${p.nearest_ps_lon}`;
+    if(seen.has(k)) return; seen.add(k);
+    L.circleMarker([p.nearest_ps_lat, p.nearest_ps_lon], {
+      radius: 7, color: '#000', weight: 1,
+      fillColor: colorForVu(p.nearest_ps_v_vertical_mm_yr), fillOpacity: 0.9
+    }).bindPopup(`<table>
+      <tr><td>Type</td><td><strong>Persistent Scatterer</strong></td></tr>
+      <tr><td>V_U</td><td>${p.nearest_ps_v_vertical_mm_yr.toFixed(2)} mm/yr</td></tr>
+      <tr><td>Status</td><td>subsiding</td></tr>
+    </table>`).addTo(psLayer);
+  });
+}
+function renderJoins(){
+  joinLayer.clearLayers();
+  if(!state.join) return;
+  DETECTIONS.features.forEach(f => {
+    const c = f.geometry.coordinates;
+    const p = f.properties;
+    L.polyline([[c[1], c[0]], [p.nearest_ps_lat, p.nearest_ps_lon]], {
+      color: '#4dabf7', weight: 2, opacity: 0.65, dashArray: '5,5'
+    }).addTo(joinLayer);
+  });
+}
+function renderPSAll(){
+  psAllLayer.clearLayers();
+  if(!state.psAll || !PS_ALL) return;
+  PS_ALL.features.forEach(f => {
+    const c = f.geometry.coordinates;
+    const vu = f.properties.vu;
+    L.circleMarker([c[1], c[0]], {
+      radius: 2, color: 'transparent',
+      fillColor: colorForVu(vu), fillOpacity: 0.5
+    }).addTo(psAllLayer);
+  });
+}
+
+function renderDetList(){
+  const list = document.getElementById('det-list');
+  list.innerHTML = '';
+  DETECTIONS.features.forEach((f, i) => {
+    const p = f.properties;
+    const c = f.geometry.coordinates;
+    const el = document.createElement('div');
+    el.className = 'detection';
+    el.innerHTML = `
+      <div class="name">#${i+1} ${p.image}
+        <span class="sev sev-${p.severity}">${p.severity}</span></div>
+      <div class="row"><span class="k">conf</span><span>${p.confidence.toFixed(3)}</span></div>
+      <div class="row"><span class="k">mask %</span><span>${(p.mask_frac*100).toFixed(2)}%</span></div>
+      <div class="row"><span class="k">PS dist</span><span>${p.nearest_ps_dist_m.toFixed(1)} m</span></div>
+      <div class="row"><span class="k">V_U</span><span style="color:${colorForVu(p.nearest_ps_v_vertical_mm_yr)}">${p.nearest_ps_v_vertical_mm_yr.toFixed(2)} mm/yr</span></div>
+    `;
+    el.addEventListener('click', () => {
+      map.setView([c[1], c[0]], 18);
+    });
+    list.appendChild(el);
+  });
+}
+
+document.getElementById('dets-toggle').addEventListener('click', e => {
+  state.dets = !state.dets;
+  e.currentTarget.classList.toggle('on', state.dets);
+  renderDetections();
+});
+document.getElementById('ps-toggle').addEventListener('click', e => {
+  state.ps = !state.ps;
+  e.currentTarget.classList.toggle('on', state.ps);
+  renderPS();
+});
+document.getElementById('join-toggle').addEventListener('click', e => {
+  state.join = !state.join;
+  e.currentTarget.classList.toggle('on', state.join);
+  renderJoins();
+});
+document.getElementById('psall-toggle').addEventListener('click', e => {
+  state.psAll = !state.psAll;
+  e.currentTarget.classList.toggle('on', state.psAll);
+  if(state.psAll){
+    if(!PS_ALL){
+      fetch('../05-web-gis-dashboard/data/persistent_scatterers.geojson').then(r=>r.json()).then(d=>{
+        PS_ALL = d;
+        renderPSAll();
+        psAllLayer.addTo(map);
+      });
+    } else {
+      renderPSAll();
+      psAllLayer.addTo(map);
+    }
+  } else {
+    map.removeLayer(psAllLayer);
+  }
+});
+
+renderDetections();
+renderPS();
+renderJoins();
+renderDetList();
+
+const bb = L.latLngBounds(DETECTIONS.features.map(f => [f.geometry.coordinates[1], f.geometry.coordinates[0]]));
+DETECTIONS.features.forEach(f => bb.extend([f.properties.nearest_ps_lat, f.properties.nearest_ps_lon]));
+map.fitBounds(bb, {padding:[100,100]});
+</script>
+</body>
+</html>
