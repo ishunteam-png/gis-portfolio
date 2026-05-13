@@ -1,0 +1,23 @@
+{
+  "fire_name": "Park Fire (Butte/Tehama, CA)",
+  "year": 2024,
+  "aoi_bbox": [
+    -121.85,
+    39.65,
+    -121.3,
+    40.1
+  ],
+  "aoi_area_km2": 2339.0,
+  "n_cells": 1024,
+  "cell_size_km": 1.51,
+  "sim_hours": 120,
+  "n_burned": 961,
+  "total_burned_km2": 2195.0,
+  "total_burned_acres": 542395.0,
+  "peak_rate_km2h": 64.0,
+  "peak_hour": 28,
+  "real_burned_acres": 429603,
+  "real_duration_days": 64,
+  "method": "Rothermel surface-fire CA on 8-neighbour grid · stochastic ignition with hourly wind reanalysis",
+  "data_source": "USGS 3DEP · LANDFIRE · HRRR · VIIRS"
+}
