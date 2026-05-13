@@ -1,0 +1,50 @@
+{
+  "city": "Singapore Strait",
+  "aoi": {
+    "w": 103.55,
+    "s": 1.05,
+    "e": 104.25,
+    "n": 1.32
+  },
+  "snapshot_hour": "2024-03-15T08:00 SGT",
+  "n_vessels": 978,
+  "n_anchored": 200,
+  "n_underway": 750,
+  "mean_dwell_h": 25.8,
+  "n_anchorages": 8,
+  "anchorages": [
+    {"id": 0, "name": "Western Petroleum A",     "lon": 103.66,  "lat": 1.195, "n_vessels": 28, "dominant_type": "Tanker",       "dominant_type_idx": 1, "mean_dwell_h": 37.7, "max_dwell_h": 59.9},
+    {"id": 1, "name": "Western Holding Area",    "lon": 103.69,  "lat": 1.215, "n_vessels": 22, "dominant_type": "Bulk carrier", "dominant_type_idx": 2, "mean_dwell_h": 23.4, "max_dwell_h": 40.1},
+    {"id": 2, "name": "Sudong Special Purpose",  "lon": 103.73,  "lat": 1.17,  "n_vessels": 12, "dominant_type": "Tanker",       "dominant_type_idx": 1, "mean_dwell_h": 60.2, "max_dwell_h": 104.6},
+    {"id": 3, "name": "Eastern Boarding Ground", "lon": 104.02,  "lat": 1.22,  "n_vessels": 41, "dominant_type": "Container",    "dominant_type_idx": 0, "mean_dwell_h": 15.5, "max_dwell_h": 25.0},
+    {"id": 4, "name": "Eastern Anchorage",       "lon": 104.10,  "lat": 1.235, "n_vessels": 36, "dominant_type": "Bulk carrier", "dominant_type_idx": 2, "mean_dwell_h": 27.7, "max_dwell_h": 51.4},
+    {"id": 5, "name": "Changi General",          "lon": 104.08,  "lat": 1.28,  "n_vessels": 24, "dominant_type": "Container",    "dominant_type_idx": 0, "mean_dwell_h": 18.0, "max_dwell_h": 32.1},
+    {"id": 6, "name": "Man-of-War Anchorage",    "lon": 103.87,  "lat": 1.23,  "n_vessels": 18, "dominant_type": "Passenger",    "dominant_type_idx": 3, "mean_dwell_h": 9.2,  "max_dwell_h": 13.6},
+    {"id": 7, "name": "Selat Pauh",              "lon": 103.77,  "lat": 1.205, "n_vessels": 19, "dominant_type": "Bulk carrier", "dominant_type_idx": 2, "mean_dwell_h": 33.4, "max_dwell_h": 55.7}
+  ],
+  "type_breakdown": [
+    {"idx": 0, "name": "Container",     "color": "#4dabf7", "count": 397, "pct": 40.6},
+    {"idx": 1, "name": "Tanker",        "color": "#fb8c00", "count": 235, "pct": 24.0},
+    {"idx": 2, "name": "Bulk carrier",  "color": "#5ec962", "count": 210, "pct": 21.5},
+    {"idx": 3, "name": "Passenger",     "color": "#bf3984", "count": 40,  "pct": 4.1},
+    {"idx": 4, "name": "Tug / service", "color": "#98a2b3", "count": 96,  "pct": 9.8}
+  ],
+  "monthly": [
+    {"month": "Jan", "vessels_in_port_k": 6.6, "anchored_pct": 0.16, "anchored_count": 1056, "mean_dwell_h": 22.0},
+    {"month": "Feb", "vessels_in_port_k": 7.1, "anchored_pct": 0.19, "anchored_count": 1349, "mean_dwell_h": 24.1},
+    {"month": "Mar", "vessels_in_port_k": 7.4, "anchored_pct": 0.21, "anchored_count": 1554, "mean_dwell_h": 27.4},
+    {"month": "Apr", "vessels_in_port_k": 7.3, "anchored_pct": 0.20, "anchored_count": 1460, "mean_dwell_h": 26.5},
+    {"month": "May", "vessels_in_port_k": 6.8, "anchored_pct": 0.17, "anchored_count": 1156, "mean_dwell_h": 22.8},
+    {"month": "Jun", "vessels_in_port_k": 6.7, "anchored_pct": 0.16, "anchored_count": 1072, "mean_dwell_h": 21.6},
+    {"month": "Jul", "vessels_in_port_k": 7.0, "anchored_pct": 0.16, "anchored_count": 1120, "mean_dwell_h": 21.9},
+    {"month": "Aug", "vessels_in_port_k": 7.1, "anchored_pct": 0.17, "anchored_count": 1207, "mean_dwell_h": 22.5},
+    {"month": "Sep", "vessels_in_port_k": 6.9, "anchored_pct": 0.16, "anchored_count": 1104, "mean_dwell_h": 22.0},
+    {"month": "Oct", "vessels_in_port_k": 6.8, "anchored_pct": 0.15, "anchored_count": 1020, "mean_dwell_h": 21.0},
+    {"month": "Nov", "vessels_in_port_k": 6.6, "anchored_pct": 0.15, "anchored_count": 990,  "mean_dwell_h": 20.6},
+    {"month": "Dec", "vessels_in_port_k": 6.5, "anchored_pct": 0.15, "anchored_count": 975,  "mean_dwell_h": 20.4}
+  ],
+  "hex_resolution": "H3 res-8 (~460 m)",
+  "compact_keys": ["id", "lon", "lat", "type_idx", "length_m", "status_idx", "anchorage_id"],
+  "data_files": {"vessels": "data/vessels.json", "hex_density": "data/hexes.json"},
+  "data_source": "AIS snapshot · H3 res-8 · DBSCAN anchorage clustering · MPA 2024 traffic stats"
+}
