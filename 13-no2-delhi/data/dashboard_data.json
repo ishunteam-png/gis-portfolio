@@ -1,0 +1,40 @@
+{
+  "city": "Delhi NCR",
+  "aoi": {"w": 76.83, "s": 28.4, "e": 77.4, "n": 28.88},
+  "grid": {"x0": 76.83, "y0": 28.4, "dx": 0.02036, "dy": 0.01846, "nx": 28, "ny": 26},
+  "cell_area_km2": 4.066,
+  "months": [
+    {"id": "2024-01", "label": "Jan 2024"},
+    {"id": "2024-02", "label": "Feb 2024"},
+    {"id": "2024-03", "label": "Mar 2024"},
+    {"id": "2024-04", "label": "Apr 2024"},
+    {"id": "2024-05", "label": "May 2024"},
+    {"id": "2024-06", "label": "Jun 2024"}
+  ],
+  "monthly_stats": [
+    {"id": "2024-01", "label": "Jan 2024", "season": "winter", "season_factor": 1.55, "rainfall_mm": 19, "mean": 107.7, "median": 97.5, "p95": 204.7, "n_exceed_who": 728, "pct_exceed_who": 100.0, "max": 529.9, "min": 61.9},
+    {"id": "2024-02", "label": "Feb 2024", "season": "winter", "season_factor": 1.35, "rainfall_mm": 22, "mean": 93.6, "median": 84.5, "p95": 184.3, "n_exceed_who": 726, "pct_exceed_who": 99.7, "max": 467.8, "min": 53.3},
+    {"id": "2024-03", "label": "Mar 2024", "season": "spring", "season_factor": 1.1, "rainfall_mm": 16, "mean": 76.3, "median": 68.4, "p95": 147.8, "n_exceed_who": 609, "pct_exceed_who": 83.7, "max": 391.7, "min": 42.0},
+    {"id": "2024-04", "label": "Apr 2024", "season": "pre-monsoon", "season_factor": 0.85, "rainfall_mm": 18, "mean": 59.2, "median": 53.4, "p95": 117.5, "n_exceed_who": 329, "pct_exceed_who": 45.2, "max": 298.8, "min": 29.5},
+    {"id": "2024-05", "label": "May 2024", "season": "pre-monsoon", "season_factor": 0.75, "rainfall_mm": 23, "mean": 52.2, "median": 46.9, "p95": 99.2, "n_exceed_who": 207, "pct_exceed_who": 28.4, "max": 267.5, "min": 25.6},
+    {"id": "2024-06", "label": "Jun 2024", "season": "monsoon", "season_factor": 0.55, "rainfall_mm": 78, "mean": 38.2, "median": 34.2, "p95": 72.8, "n_exceed_who": 72, "pct_exceed_who": 9.9, "max": 154.3, "min": 14.6}
+  ],
+  "no2_unit": "µmol/m² (tropospheric column)",
+  "no2_scale": 10,
+  "who_reference": 55.0,
+  "hotspots": [
+    {"lon": 77.275, "lat": 28.647, "intensity": 1.0, "label": "Anand Vihar (Bus terminal)"},
+    {"lon": 77.165, "lat": 28.701, "intensity": 0.95, "label": "Wazirpur Industrial Area"},
+    {"lon": 77.155, "lat": 28.7, "intensity": 0.9, "label": "Mundka"},
+    {"lon": 77.09, "lat": 28.728, "intensity": 0.8, "label": "Bawana Industrial Area"},
+    {"lon": 77.295, "lat": 28.696, "intensity": 0.85, "label": "Patparganj"},
+    {"lon": 77.205, "lat": 28.585, "intensity": 0.75, "label": "ITO / Pragati Maidan"},
+    {"lon": 77.22, "lat": 28.612, "intensity": 0.78, "label": "Mandir Marg (central)"},
+    {"lon": 77.197, "lat": 28.547, "intensity": 0.72, "label": "AIIMS junction"},
+    {"lon": 77.103, "lat": 28.56, "intensity": 0.7, "label": "Dhaula Kuan / NH-48"},
+    {"lon": 77.317, "lat": 28.566, "intensity": 0.68, "label": "Mayur Vihar"},
+    {"lon": 77.11, "lat": 28.504, "intensity": 0.65, "label": "Vasant Vihar"}
+  ],
+  "data_files": {"cells": "data/cells.json"},
+  "data_source": "Sentinel-5P TROPOMI L3 monthly NO2 via Google Earth Engine · CPCB CAAQMS ground stations for validation"
+}
