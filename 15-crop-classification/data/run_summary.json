@@ -1,0 +1,20 @@
+{
+  "region": "Story County, Iowa (Corn Belt)",
+  "aoi_bbox": [-93.85, 41.85, -93.3, 42.2],
+  "aoi_area_km2": 1763.0,
+  "n_cells": 672,
+  "cell_size_km": 1.62,
+  "classes": ["corn", "soybean", "hay", "wheat", "other_veg", "urban", "water"],
+  "composition_pct": {
+    "corn": 53.3, "soybean": 36.0, "hay": 3.0, "wheat": 1.2,
+    "other_veg": 3.9, "urban": 2.4, "water": 0.3
+  },
+  "models": {
+    "s2_only": {"OA": 0.872, "kappa": 0.84, "feat_count": 4, "OA_realised": 0.8631},
+    "s1_only": {"OA": 0.815, "kappa": 0.77, "feat_count": 4, "OA_realised": 0.8095},
+    "s1_s2":   {"OA": 0.924, "kappa": 0.91, "feat_count": 8, "OA_realised": 0.9271}
+  },
+  "fusion_uplift_pct": 6.4,
+  "method": "RF on temporal S1 (VV/VH) + S2 (NDVI + SR) stacks · monthly composites May-Oct 2024 · 5-fold stratified CV vs CDL ground truth",
+  "data_source": "Sentinel-1 GRD · Sentinel-2 L2A SR · USDA NASS CDL 2023"
+}
