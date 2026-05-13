@@ -1,0 +1,17 @@
+{
+  "city": "Delhi NCR",
+  "aoi_bbox": [76.83, 28.4, 77.4, 28.88],
+  "aoi_area_km2": 2960.0,
+  "n_cells": 728,
+  "cell_size_km": 2.02,
+  "n_months": 6,
+  "no2_unit": "µmol/m² tropospheric column",
+  "who_reference": 55.0,
+  "annual_mean_no2": 71.2,
+  "winter_peak_month": "Jan 2024",
+  "monsoon_trough_month": "Jun 2024",
+  "winter_to_monsoon_ratio": 2.82,
+  "n_hotspots": 11,
+  "method": "TROPOMI L3 monthly composite · QA>0.75 cloud mask · per-cell aggregation · CPCB cross-validation",
+  "data_source": "Sentinel-5P TROPOMI · GEE COPERNICUS/S5P/NRTI/L3_NO2 · CPCB CAAQMS"
+}
