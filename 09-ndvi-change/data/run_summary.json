@@ -1,0 +1,42 @@
+{
+  "region": "Rondônia, Brazil (BR-364 corridor)",
+  "aoi_bbox": [
+    -63.2,
+    -11.5,
+    -61.8,
+    -9.5
+  ],
+  "aoi_area_km2": 33921.0,
+  "n_cells": 440,
+  "cell_size_km": 8.78,
+  "years": [
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "cleared_cells": 35,
+  "cleared_pct": 8.0,
+  "total_loss_km2": 2698.0,
+  "loss_by_year_km2": {
+    "2015": 154.2,
+    "2016": 154.2,
+    "2017": 231.3,
+    "2018": 308.4,
+    "2019": 693.8,
+    "2020": 385.5,
+    "2021": 154.2,
+    "2022": 308.4,
+    "2023": 154.2,
+    "2024": 154.2
+  },
+  "data_source": "Sentinel-2 L2A + Landsat 8/9 SR via Google Earth Engine — annual NDVI composites",
+  "method": "LandTrendr-style temporal segmentation + threshold classifier",
+  "n_showcases": 10
+}
