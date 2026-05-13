@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tbilisi Café Suitability — Dashboard</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<style>
+:root {
+  --bg: #0f1419; --panel: #1a1f29; --panel-2: #232a36;
+  --line: #2d3441; --fg: #e7ecf3; --fg-dim: #98a2b3;
+  --accent: #4dabf7;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+     color:var(--fg);background:var(--bg);
+     display:grid;grid-template-rows:60px 1fr;grid-template-columns:320px 1fr}
+header{grid-column:1/3;background:var(--panel);border-bottom:1px solid var(--line);
+       display:flex;align-items:center;padding:0 20px;gap:16px}
+header h1{margin:0;font-size:16px;font-weight:600}
+header h1 .sub{color:var(--fg-dim);font-weight:400;margin-left:8px;font-size:13px}
+header .stats{margin-left:auto;display:flex;gap:10px}
+.stat{background:var(--panel-2);padding:5px 12px;border-radius:6px;border:1px solid var(--line);min-width:80px}
+.stat .lbl{color:var(--fg-dim);font-size:10px;text-transform:uppercase;letter-spacing:1px}
+.stat .val{color:var(--fg);font-size:15px;font-weight:600}
+aside{background:var(--panel);border-right:1px solid var(--line);padding:14px 16px;overflow-y:auto}
+aside h2{margin:16px 0 8px;font-size:11px;font-weight:600;color:var(--fg-dim);
+         text-transform:uppercase;letter-spacing:1.4px}
+aside h2:first-of-type{margin-top:0}
+.field{margin-bottom:11px}
+.field label{display:block;font-size:12px;color:var(--fg-dim);margin-bottom:5px}
+.field input[type="range"]{width:100%;background:var(--panel-2);accent-color:var(--accent)}
+.range-row{display:flex;align-items:center;gap:8px}
+.range-row .v{font-size:12px;width:50px;text-align:right}
+.toggle{display:flex;align-items:center;justify-content:space-between;background:var(--panel-2);
+        border:1px solid var(--line);border-radius:6px;padding:8px 11px;cursor:pointer;
+        font-size:13px;user-select:none}
+.toggle:hover{border-color:var(--accent)}
+.toggle.on{border-color:var(--accent);background:rgba(77,171,247,0.10)}
+.toggle .dot{width:10px;height:10px;border-radius:50%;background:var(--fg-dim)}
+.toggle.on .dot{background:var(--accent)}
+#map{width:100%;height:100%;background:#0a0e14}
+.leaflet-tile{filter:grayscale(0.15) brightness(0.85)}
+.legend{margin-top:8px;padding:10px;background:var(--panel-2);border-radius:6px;border:1px solid var(--line)}
+.legend-bar{height:12px;border-radius:3px;margin-bottom:4px}
+.legend-ticks{display:flex;justify-content:space-between;font-size:11px;color:var(--fg-dim)}
+.leaflet-popup-content-wrapper{background:var(--panel);color:var(--fg);border:1px solid var(--line);
+   border-radius:7px;box-shadow:0 6px 24px rgba(0,0,0,0.4)}
+.leaflet-popup-tip{background:var(--panel);border:1px solid var(--line)}
+.leaflet-popup-content{font-family:inherit;font-size:12px}
+.leaflet-popup-content table{border-collapse:collapse}
+.leaflet-popup-content td{padding:2px 8px 2px 0}
+.leaflet-popup-content td:first-child{color:var(--fg-dim)}
+.foot{color:var(--fg-dim);font-size:11px;margin-top:18px;line-height:1.55;
+      border-top:1px solid var(--line);padding-top:12px}
+.foot a{color:var(--accent);text-decoration:none}
+.back{display:block;text-align:center;background:var(--panel-2);color:var(--accent);
+      text-decoration:none;padding:8px;border-radius:6px;font-size:12px;
+      border:1px solid var(--line);margin-bottom:14px}
+.back:hover{border-color:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Tbilisi Café Suitability<span class="sub">top 100 cells from the 8,415-cell model</span></h1>
+  <div class="stats">
+    <div class="stat"><div class="lbl">Cells visible</div><div class="val" id="stat-count">—</div></div>
+    <div class="stat"><div class="lbl">Top score</div><div class="val" id="stat-top">—</div></div>
+    <div class="stat"><div class="lbl">Median score</div><div class="val" id="stat-med">—</div></div>
+  </div>
+</header>
+<aside>
+  <a class="back" href="../">← back to portfolio</a>
+
+  <h2>Filter — minimum suitability</h2>
+  <div class="field">
+    <div class="range-row">
+      <input type="range" id="minscore" min="0.5" max="1" step="0.01" value="0.5"/>
+      <span class="v" id="minscore-v">0.50</span>
+    </div>
+  </div>
+
+  <h2>Layers</h2>
+  <div class="field">
+    <div id="top20-toggle" class="toggle on">
+      <span>Highlight top-20 cells</span><span class="dot"></span>
+    </div>
+  </div>
+  <div class="field">
+    <div id="labels-toggle" class="toggle">
+      <span>Show rank numbers</span><span class="dot"></span>
+    </div>
+  </div>
+
+  <h2>Legend — suitability score</h2>
+  <div class="legend">
+    <div class="legend-bar" id="legend-bar"></div>
+    <div class="legend-ticks">
+      <span>0.50</span><span>0.75</span><span>1.00</span>
+    </div>
+  </div>
+
+  <h2>About</h2>
+  <p style="font-size:12px;color:var(--fg-dim);line-height:1.6">
+    Each cell is 250 m × 250 m. The score combines foot traffic (shops + transit),
+    residential density, tourist amenities, walkability (intersection density), and
+    competition (penalty). The full model covers 8,415 cells over 504 km² — this
+    dashboard shows the top 100 to keep the map readable.
+  </p>
+
+  <div class="foot">
+    Validated against the actual distribution of cafés in OSM:
+    <strong>Spearman ρ = 0.39</strong> — cells the model rates highly already have
+    more cafés than cells it rates lowly.<br><br>
+    Source: OpenStreetMap, OSMnx walk graph (62,849 intersection nodes for Tbilisi).
+  </div>
+</aside>
+<div id="map"></div>
+
+<script>
+// === INLINE DATA: top 100 suitability cells ===
+const DATA = /*DATA_PLACEHOLDER*/null;
+
+// === colour ramp ===
+function colorFor(s){
+  // 0.5 -> #fee08b, 0.75 -> #fc8d59, 1.0 -> #b30000
+  const t = Math.max(0, Math.min(1, (s - 0.5) / 0.5));
+  const r = Math.round(254 + (179-254)*t);
+  const g = Math.round(224 - 224*t);
+  const b = Math.round(139 - 139*t);
+  return `rgb(${r},${g},${b})`;
+}
+function renderLegend(){
+  const stops=[];
+  for(let i=0;i<=20;i++){
+    const t=i/20;
+    stops.push(colorFor(0.5+0.5*t)+' '+(t*100).toFixed(0)+'%');
+  }
+  document.getElementById('legend-bar').style.background =
+    'linear-gradient(to right, '+stops.join(', ')+')';
+}
+renderLegend();
+
+const map = L.map('map', {zoomControl:true, preferCanvas:true}).setView([41.715, 44.79], 12);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  {attribution:'&copy; OpenStreetMap &copy; CartoDB', subdomains:'abcd', maxZoom:19}).addTo(map);
+
+let cellLayer = L.layerGroup().addTo(map);
+let labelLayer = L.layerGroup();
+let topRingLayer = L.layerGroup().addTo(map);
+
+const state = {minScore:0.5, top20:true, labels:false};
+
+function popupHtml(p, rank){
+  return `<table>
+    <tr><td><strong>Rank #${rank}</strong></td><td><strong>${p.suitability.toFixed(3)}</strong></td></tr>
+    <tr><td>Foot traffic (300m)</td><td>${p.foot_traffic} POIs</td></tr>
+    <tr><td>Residential (300m)</td><td>${p.residential}</td></tr>
+    <tr><td>Tourist (500m)</td><td>${p.tourist}</td></tr>
+    <tr><td>Walkability (400m)</td><td>${p.walkability} intersections</td></tr>
+    <tr><td>Cafés nearby (200m)</td><td>${p.competition}</td></tr>
+  </table>`;
+}
+
+function rebuild(){
+  cellLayer.clearLayers();
+  labelLayer.clearLayers();
+  topRingLayer.clearLayers();
+  document.getElementById('minscore-v').textContent = state.minScore.toFixed(2);
+
+  // Sort by suitability descending so rank is consistent
+  const ranked = [...DATA.features].sort((a,b)=>b.properties.suitability-a.properties.suitability);
+  const visible = ranked.filter(f => f.properties.suitability >= state.minScore);
+
+  visible.forEach((f, idx) => {
+    const rank = idx + 1;
+    const p = f.properties;
+    const coords = f.geometry.coordinates[0].map(c => [c[1], c[0]]);
+    const poly = L.polygon(coords, {
+      color: colorFor(p.suitability), weight: 1, opacity: 0.6,
+      fillColor: colorFor(p.suitability), fillOpacity: 0.65
+    }).bindPopup(popupHtml(p, rank));
+    poly.addTo(cellLayer);
+
+    if(state.top20 && rank <= 20){
+      const center = coords.reduce((s,c)=>[s[0]+c[0],s[1]+c[1]],[0,0]).map(v=>v/coords.length);
+      L.circleMarker(center, {radius:14, color:'#ffd43b', weight:2.5, fill:false, opacity:0.95})
+        .addTo(topRingLayer);
+    }
+    if(state.labels && rank <= 50){
+      const center = coords.reduce((s,c)=>[s[0]+c[0],s[1]+c[1]],[0,0]).map(v=>v/coords.length);
+      L.marker(center, {icon: L.divIcon({
+        className:'',
+        html:`<div style="background:rgba(15,20,25,0.85);color:#fff;font-size:10px;font-weight:600;
+              padding:1px 6px;border-radius:4px;border:1px solid #2d3441;">${rank}</div>`,
+        iconSize:[24,16], iconAnchor:[12,8]
+      })}).addTo(labelLayer);
+    }
+  });
+
+  // Stats
+  document.getElementById('stat-count').textContent = visible.length;
+  if(visible.length){
+    const scores = visible.map(f=>f.properties.suitability);
+    document.getElementById('stat-top').textContent = scores[0].toFixed(3);
+    const sorted = [...scores].sort();
+    document.getElementById('stat-med').textContent = sorted[Math.floor(sorted.length/2)].toFixed(3);
+  } else {
+    document.getElementById('stat-top').textContent = '—';
+    document.getElementById('stat-med').textContent = '—';
+  }
+}
+
+document.getElementById('minscore').addEventListener('input', e => {
+  state.minScore = +e.target.value; rebuild();
+});
+document.getElementById('top20-toggle').addEventListener('click', e => {
+  state.top20 = !state.top20;
+  e.currentTarget.classList.toggle('on', state.top20);
+  rebuild();
+});
+document.getElementById('labels-toggle').addEventListener('click', e => {
+  state.labels = !state.labels;
+  e.currentTarget.classList.toggle('on', state.labels);
+  if(state.labels) labelLayer.addTo(map); else map.removeLayer(labelLayer);
+  rebuild();
+});
+
+// Fetch data and initial render
+fetch('dashboard_data.json').then(r=>r.json()).then(d => {
+  window.__data = d;
+  // Inject as DATA
+  Object.assign({}, DATA);  // no-op; we just reassign via eval
+  // hacky: use globalThis
+  eval('DATA = window.__data');
+  rebuild();
+  // Fit bounds
+  const all = DATA.features.flatMap(f => f.geometry.coordinates[0].map(c=>[c[1],c[0]]));
+  map.fitBounds(all, {padding:[40,40]});
+}).catch(err => {
+  document.body.insertAdjacentHTML('beforeend',
+    '<div style="position:fixed;top:60px;left:340px;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:#888;background:rgba(15,20,25,0.85);z-index:600;font-size:14px;">Could not load dashboard_data.json. Serve over HTTP.</div>');
+  console.error(err);
+});
+</script>
+</body>
+</html>
