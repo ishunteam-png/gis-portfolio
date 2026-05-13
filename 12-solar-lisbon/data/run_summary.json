@@ -1,0 +1,19 @@
+{
+  "city": "Lisbon, Portugal",
+  "aoi_bbox": [
+    -9.225,
+    38.69,
+    -9.105,
+    38.77
+  ],
+  "n_buildings": 450,
+  "n_neighbourhoods": 5,
+  "total_annual_kwh": 12533413.0,
+  "total_annual_mwh": 12533.0,
+  "equiv_homes_pt": 4178.0,
+  "avg_kwh_per_m2": 185.9,
+  "panel_efficiency": 0.2,
+  "performance_ratio": 0.83,
+  "method": "OSM building footprints + Copernicus 25 m DEM-derived tilt/aspect → pvlib annual irradiance × roof area × panel/PR coefficients",
+  "data_source": "OSM · Copernicus DEM · PVGIS · pvlib"
+}
