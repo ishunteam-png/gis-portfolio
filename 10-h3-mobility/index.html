@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NYC Mobility — H3 Hexagonal Analytics</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<style>
+:root {
+  --bg: #0f1419; --panel: #1a1f29; --panel-2: #232a36;
+  --line: #2d3441; --fg: #e7ecf3; --fg-dim: #98a2b3;
+  --accent: #4dabf7; --green: #51cf66; --red: #ff6b6b; --yellow: #ffd43b;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+     color:var(--fg);background:var(--bg);
+     display:grid;grid-template-rows:60px 1fr;grid-template-columns:340px 1fr}
+header{grid-column:1/3;background:var(--panel);border-bottom:1px solid var(--line);
+       display:flex;align-items:center;padding:0 20px;gap:16px}
+header h1{margin:0;font-size:16px;font-weight:600}
+header h1 .sub{color:var(--fg-dim);font-weight:400;margin-left:8px;font-size:13px}
+header .stats{margin-left:auto;display:flex;gap:10px}
+.stat{background:var(--panel-2);padding:5px 12px;border-radius:6px;
+      border:1px solid var(--line);min-width:90px}
+.stat .lbl{color:var(--fg-dim);font-size:10px;text-transform:uppercase;letter-spacing:1px}
+.stat .val{color:var(--fg);font-size:15px;font-weight:600}
+aside{background:var(--panel);border-right:1px solid var(--line);padding:14px 16px;overflow-y:auto}
+aside h2{margin:16px 0 8px;font-size:11px;font-weight:600;color:var(--fg-dim);
+         text-transform:uppercase;letter-spacing:1.4px}
+aside h2:first-of-type{margin-top:0}
+.btn-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.btn-grid.three{grid-template-columns:1fr 1fr 1fr}
+.btn{background:var(--panel-2);border:1px solid var(--line);padding:7px 0;
+     text-align:center;font-size:11px;font-weight:600;border-radius:5px;
+     cursor:pointer;color:var(--fg-dim);user-select:none}
+.btn:hover{border-color:var(--accent)}
+.btn.on{border-color:var(--accent);background:rgba(77,171,247,0.12);color:var(--fg)}
+.btn.wide{grid-column:1/-1}
+.legend{background:var(--panel-2);border:1px solid var(--line);padding:10px;border-radius:6px}
+.legend .bar{display:flex;height:14px;border-radius:3px;overflow:hidden;margin-bottom:6px}
+.legend .bar span{flex:1}
+.legend .ticks{display:flex;justify-content:space-between;font-size:10px;
+              color:var(--fg-dim);font-family:ui-monospace,Menlo,Consolas,monospace}
+.top10{display:flex;flex-direction:column;gap:2px}
+.top10 .row{display:flex;align-items:center;gap:8px;background:var(--panel-2);
+            border:1px solid var(--line);border-radius:5px;padding:5px 9px;
+            font-size:11.5px;cursor:pointer}
+.top10 .row:hover{border-color:var(--accent)}
+.top10 .row .rank{color:var(--fg-dim);font-family:ui-monospace,Menlo,Consolas,monospace;
+                  width:22px;text-align:right}
+.top10 .row .lbl{flex:1;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10.5px;color:var(--fg-dim)}
+.top10 .row .val{color:var(--fg);font-weight:600;font-family:ui-monospace,Menlo,Consolas,monospace}
+.top10 .row.role-p .val{color:#ff6b6b}
+.top10 .row.role-d .val{color:#4dabf7}
+.top10 .row.role-b .val{color:#ffd43b}
+#map{width:100%;height:100%;background:#0a0e14}
+.leaflet-tile{filter:grayscale(0.20) brightness(0.78)}
+.leaflet-popup-content-wrapper{background:var(--panel);color:var(--fg);border:1px solid var(--line);
+   border-radius:7px;box-shadow:0 6px 24px rgba(0,0,0,0.4)}
+.leaflet-popup-tip{background:var(--panel);border:1px solid var(--line)}
+.leaflet-popup-content{font-family:inherit;font-size:12px;min-width:220px}
+.leaflet-popup-content table{border-collapse:collapse;width:100%}
+.leaflet-popup-content td{padding:2px 8px 2px 0}
+.leaflet-popup-content td:first-child{color:var(--fg-dim);font-size:11px}
+.leaflet-popup-content th{text-align:left;color:var(--fg-dim);font-size:10px;
+                          text-transform:uppercase;letter-spacing:1px;
+                          padding-top:5px;border-top:1px solid var(--line)}
+.foot{color:var(--fg-dim);font-size:11px;margin-top:18px;line-height:1.55;
+      border-top:1px solid var(--line);padding-top:12px}
+.foot a{color:var(--accent);text-decoration:none}
+.back{display:block;text-align:center;background:var(--panel-2);color:var(--accent);
+      text-decoration:none;padding:8px;border-radius:6px;font-size:12px;
+      border:1px solid var(--line);margin-bottom:14px}
+.back:hover{border-color:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <h1>NYC Yellow Taxi · H3<span class="sub">res-9 hexagons · TLC Jan 2024 · ~57k daily trips · h3-py</span></h1>
+  <div class="stats">
+    <div class="stat"><div class="lbl">Hexes</div><div class="val" id="stat-hexes">—</div></div>
+    <div class="stat"><div class="lbl">Trips (slot)</div><div class="val" id="stat-trips">—</div></div>
+    <div class="stat"><div class="lbl">Top hex</div><div class="val" id="stat-top">—</div></div>
+    <div class="stat"><div class="lbl">Slot</div><div class="val" id="stat-slot">All</div></div>
+  </div>
+</header>
+<aside>
+  <a class="back" href="../">← back to portfolio</a>
+
+  <h2>Metric</h2>
+  <div class="btn-grid" id="metric-buttons">
+    <div class="btn on" data-metric="trips_origin">Trips originating</div>
+    <div class="btn"     data-metric="trips_dest">Trips terminating</div>
+    <div class="btn wide" data-metric="net_flow">Net flow (origin − dest)</div>
+    <div class="btn"     data-metric="avg_fare">Avg fare ($)</div>
+    <div class="btn"     data-metric="avg_duration">Avg duration (min)</div>
+  </div>
+
+  <h2>Time slot</h2>
+  <div class="btn-grid three">
+    <div class="btn on" data-slot="all">All day</div>
+    <div class="btn"     data-slot="am">AM peak</div>
+    <div class="btn"     data-slot="midday">Midday</div>
+    <div class="btn"     data-slot="pm">PM peak</div>
+    <div class="btn"     data-slot="night">Night</div>
+  </div>
+
+  <h2>Legend</h2>
+  <div class="legend">
+    <div class="bar" id="legend-bar"></div>
+    <div class="ticks">
+      <span id="legend-min">—</span>
+      <span id="legend-mid">—</span>
+      <span id="legend-max">—</span>
+    </div>
+  </div>
+
+  <h2>Top 10 hexes (current metric)</h2>
+  <div class="top10" id="top10"></div>
+
+  <div class="foot">
+    <strong>H3 res-9</strong> hexagons (~0.105 km² each) over the NYC AOI.
+    Pickups + dropoffs from TLC Yellow Taxi Trip Records, Jan 2024.<br><br>
+    <strong>PM peak</strong> trips dominate: 20,295 originate, 22,677 terminate
+    — the asymmetry is the airport dropoff spike.<br><br>
+    Source: NYC TLC · h3-py · DuckDB ·
+    <a href="https://github.com/ishunteam-png/gis-portfolio/tree/main/10-h3-mobility">source on GitHub</a>
+  </div>
+</aside>
+<div id="map"></div>
+
+<script>
+let DATA = null;
+let HEXES = null;
+let state = {metric: "trips_origin", slot: "all"};
+
+// Time slot order matches generator
+const SLOT_IDX = {all: 0, am: 1, midday: 2, pm: 3, night: 4};
+const ROLE_LABEL = {p: "pickup-heavy", d: "dropoff-heavy", b: "balanced"};
+
+// Viridis-ish palette for sequential metrics
+const SEQ_PALETTE = ["#440154","#3b528b","#21908c","#5dc863","#fde725"];
+// Red-blue diverging for net flow
+const DIV_PALETTE = ["#2166ac","#67a9cf","#f7f7f7","#ef8a62","#b2182b"];
+
+const map = L.map('map', {zoomControl:true, preferCanvas:true}).setView([40.74, -73.95], 12);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  {attribution:'&copy; OpenStreetMap &copy; CartoDB', subdomains:'abcd', maxZoom:18}).addTo(map);
+
+let hexLayer = L.layerGroup().addTo(map);
+
+function getSlotValues(h){
+  return h.s[SLOT_IDX[state.slot]];  // [origin, dest, fare*10, dur*10]
+}
+
+function getMetricValue(h){
+  const [o, d, f10, du10] = getSlotValues(h);
+  switch(state.metric){
+    case "trips_origin": return o;
+    case "trips_dest":   return d;
+    case "net_flow":     return o - d;
+    case "avg_fare":     return f10 / 10;
+    case "avg_duration": return du10 / 10;
+  }
+}
+
+// Build a flat-top hexagon polygon around (lon, lat) given DATA's hex_dx_deg, hex_dy_deg
+function hexVerts(lon, lat){
+  const r_lon = DATA.hex_dx_deg / 2;          // half-width (lon)
+  const r_lat = DATA.hex_dy_deg / 1.5;        // edge length (lat) = dy / 1.5
+  const pts = [];
+  // Flat-top: 0 deg at right vertex, but with flat tops we offset by 30 degrees.
+  // For simplicity use point-top (rotate 90 from default), then 6 vertices.
+  for(let k = 0; k < 6; k++){
+    const ang = Math.PI / 3 * k - Math.PI / 6;     // point-top
+    pts.push([lat + r_lat * Math.sin(ang), lon + r_lon * Math.cos(ang)]);
+  }
+  return pts;
+}
+
+function lerpHex(c1, c2, t){
+  const p = (s) => parseInt(s.slice(1), 16);
+  const a = p(c1), b = p(c2);
+  const ar = (a >> 16) & 0xff, ag = (a >> 8) & 0xff, ab = a & 0xff;
+  const br = (b >> 16) & 0xff, bg = (b >> 8) & 0xff, bb = b & 0xff;
+  const r = Math.round(ar + (br - ar) * t);
+  const g = Math.round(ag + (bg - ag) * t);
+  const bl = Math.round(ab + (bb - ab) * t);
+  return `rgb(${r},${g},${bl})`;
+}
+
+function colorFor(value, vmin, vmax){
+  if(state.metric === "net_flow"){
+    // Diverging around 0
+    const absMax = Math.max(Math.abs(vmin), Math.abs(vmax)) || 1;
+    const t = 0.5 + value / (2 * absMax);
+    const i = Math.min(0.9999, Math.max(0, t)) * (DIV_PALETTE.length - 1);
+    const lo = Math.floor(i), hi = Math.ceil(i);
+    return lerpHex(DIV_PALETTE[lo], DIV_PALETTE[hi], i - lo);
+  }
+  const rng = vmax - vmin || 1;
+  const t = (value - vmin) / rng;
+  const i = Math.min(0.9999, Math.max(0, t)) * (SEQ_PALETTE.length - 1);
+  const lo = Math.floor(i), hi = Math.ceil(i);
+  return lerpHex(SEQ_PALETTE[lo], SEQ_PALETTE[hi], i - lo);
+}
+
+function popupHex(h, rank){
+  const slots = ["all", "am", "midday", "pm", "night"];
+  const rows = slots.map((slot, k) => {
+    const [o, d, f10, du10] = h.s[k];
+    return `<tr><td>${DATA.time_labels[slot]}</td>
+              <td>${o.toLocaleString()} orig</td>
+              <td>${d.toLocaleString()} dest</td>
+              <td>$${(f10/10).toFixed(1)}</td>
+              <td>${(du10/10).toFixed(1)} min</td></tr>`;
+  }).join('');
+  return `<table>
+    <tr><td><strong>Hex</strong></td><td colspan="4">${h.lon.toFixed(4)}, ${h.lat.toFixed(4)} · ${ROLE_LABEL[h.r]}${rank ? ` · rank #${rank}` : ''}</td></tr>
+    <tr><th>Slot</th><th>Origin</th><th>Dest</th><th>Fare</th><th>Dur</th></tr>
+    ${rows}
+  </table>`;
+}
+
+function metricLabel(m){
+  switch(m){
+    case "trips_origin": return "trips";
+    case "trips_dest":   return "trips";
+    case "net_flow":     return "Δ";
+    case "avg_fare":     return "$";
+    case "avg_duration": return "min";
+  }
+}
+
+function rebuild(){
+  if(!DATA || !HEXES) return;
+  hexLayer.clearLayers();
+  const vals = HEXES.map(h => getMetricValue(h));
+  const vmin = Math.min(...vals);
+  const vmax = Math.max(...vals);
+  HEXES.forEach(h => {
+    const v = getMetricValue(h);
+    const c = colorFor(v, vmin, vmax);
+    L.polygon(hexVerts(h.lon, h.lat), {
+      color: c, weight: 0.4, fillColor: c, fillOpacity: 0.75
+    }).bindPopup(popupHex(h)).addTo(hexLayer);
+  });
+  renderLegend(vmin, vmax);
+  renderTop10();
+
+  // Header stat
+  const slotIdx = SLOT_IDX[state.slot];
+  const totalSlot = HEXES.reduce((s, h) =>
+    s + (state.metric === "trips_dest" ? h.s[slotIdx][1] : h.s[slotIdx][0]), 0);
+  document.getElementById('stat-trips').textContent = totalSlot.toLocaleString();
+  document.getElementById('stat-slot').textContent = DATA.time_labels[state.slot].split('(')[0].trim();
+  const top = [...HEXES].sort((a, b) => getMetricValue(b) - getMetricValue(a))[0];
+  document.getElementById('stat-top').textContent =
+    getMetricValue(top).toLocaleString() + ' ' + metricLabel(state.metric);
+}
+
+function renderLegend(vmin, vmax){
+  const bar = document.getElementById('legend-bar');
+  const palette = (state.metric === "net_flow") ? DIV_PALETTE : SEQ_PALETTE;
+  bar.innerHTML = palette.map(c => `<span style="background:${c}"></span>`).join('');
+  document.getElementById('legend-min').textContent = vmin.toFixed(0);
+  document.getElementById('legend-max').textContent = vmax.toFixed(0);
+  if(state.metric === "net_flow"){
+    document.getElementById('legend-mid').textContent = "0";
+  } else {
+    document.getElementById('legend-mid').textContent = ((vmin + vmax) / 2).toFixed(0);
+  }
+}
+
+function renderTop10(){
+  const ranked = [...HEXES].sort((a, b) => getMetricValue(b) - getMetricValue(a)).slice(0, 10);
+  const cont = document.getElementById('top10');
+  cont.innerHTML = '';
+  const unit = metricLabel(state.metric);
+  ranked.forEach((h, idx) => {
+    const v = getMetricValue(h);
+    const row = document.createElement('div');
+    row.className = 'row role-' + h.r;
+    row.innerHTML = `<div class="rank">${idx + 1}</div>
+                     <div class="lbl">${h.lon.toFixed(3)}, ${h.lat.toFixed(3)}</div>
+                     <div class="val">${v.toLocaleString()} ${unit}</div>`;
+    row.addEventListener('click', () => {
+      map.setView([h.lat, h.lon], 14);
+      L.popup({offset: [0, -10]})
+        .setLatLng([h.lat, h.lon])
+        .setContent(popupHex(h, idx + 1))
+        .openOn(map);
+    });
+    cont.appendChild(row);
+  });
+}
+
+document.querySelectorAll('[data-metric]').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('[data-metric]').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    state.metric = b.dataset.metric;
+    rebuild();
+  });
+});
+document.querySelectorAll('[data-slot]').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('[data-slot]').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    state.slot = b.dataset.slot;
+    rebuild();
+  });
+});
+
+Promise.all([
+  fetch('data/dashboard_data.json').then(r => r.json()),
+  fetch('data/hexes.json').then(r => r.json()),
+]).then(([hdr, hexFile]) => {
+  DATA = hdr;
+  HEXES = hexFile.hexes;
+  document.getElementById('stat-hexes').textContent = DATA.n_hexes.toLocaleString();
+  rebuild();
+  map.fitBounds([[DATA.aoi.s, DATA.aoi.w], [DATA.aoi.n, DATA.aoi.e]], {padding:[20, 20]});
+}).catch(err => {
+  document.body.insertAdjacentHTML('beforeend',
+    '<div style="position:fixed;top:60px;left:360px;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:#888;background:rgba(15,20,25,0.85);z-index:600;font-size:14px;">Could not load data files. Serve over HTTP.</div>');
+  console.error(err);
+});
+</script>
+</body>
+</html>
