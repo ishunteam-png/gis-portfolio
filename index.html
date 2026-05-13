@@ -235,19 +235,20 @@ footer a:hover { text-decoration: underline; }
 
 <section class="hero">
   <div class="kicker">GIS / Geospatial Portfolio</div>
-  <h1>Fifteen end-to-end <span class="grad">geospatial projects</span><br>with interactive dashboards</h1>
+  <h1>Seventeen end-to-end <span class="grad">geospatial projects</span><br>with interactive dashboards</h1>
   <p class="tagline">
     InSAR remote sensing, location intelligence, route optimization, compound flood modelling,
     web mapping, GeoAI, LULC classification, 15-min city accessibility, deforestation time series,
-    H3 mobility analytics, <strong>Rothermel wildfire spread, rooftop solar potential, TROPOMI NO₂ plumes,
-    AIS vessel tracking, and S1+S2 crop classification</strong>.
+    H3 mobility analytics, Rothermel wildfire spread, rooftop solar potential, TROPOMI NO₂ plumes,
+    AIS vessel tracking, S1+S2 crop classification,
+    <strong>Landsat thermal urban heat island, and Sentinel-2 NDWI coastal erosion</strong>.
     Each project ships with its own <strong>interactive Leaflet dashboard</strong>
     — built from scratch, end-to-end, and running live on GitHub Pages.
   </p>
 
   <div class="hero-stats">
-    <div class="hero-stat"><span class="v">15</span><span class="l">Projects</span></div>
-    <div class="hero-stat"><span class="v">15</span><span class="l">Live dashboards</span></div>
+    <div class="hero-stat"><span class="v">17</span><span class="l">Projects</span></div>
+    <div class="hero-stat"><span class="v">17</span><span class="l">Live dashboards</span></div>
   </div>
 
   <div class="cta-row">
@@ -255,7 +256,7 @@ footer a:hover { text-decoration: underline; }
       🚀 Launch flagship dashboard
     </a>
     <a class="cta cta-secondary" href="#projects">
-      Browse all 15 projects ↓
+      Browse all 17 projects ↓
     </a>
   </div>
 </section>
@@ -612,6 +613,55 @@ footer a:hover { text-decoration: underline; }
     <div class="actions">
       <a class="btn btn-primary" href="15-crop-classification/">Open dashboard →</a>
       <a class="btn btn-secondary" href="https://github.com/ishunteam-png/gis-portfolio/tree/main/15-crop-classification" title="Source on GitHub">↗</a>
+    </div>
+  </article>
+
+  <article class="card">
+    <div class="card-head">
+      <div class="card-num">PROJECT<span class="big">16</span></div>
+      <span class="badge"><span class="live-dot"></span>Live</span>
+    </div>
+    <h3>Urban Heat Island — Tokyo</h3>
+    <p>
+      Landsat-9 thermal band 10 LST × Sentinel-2 NDVI on a 32×32 grid over the
+      August 2024 heat-wave peak. <strong>UHI 5.6°C</strong> between the Yamanote
+      core (peak 37.4°C) and suburban rural baseline. Spearman <strong>ρ = −0.82</strong>
+      over land — the "more trees = cooler block" relationship at city scale.
+    </p>
+    <div class="pills">
+      <span class="pill">Landsat 9</span>
+      <span class="pill">Sentinel-2</span>
+      <span class="pill">pystac-client</span>
+      <span class="pill">scipy.stats</span>
+    </div>
+    <div class="actions">
+      <a class="btn btn-primary" href="16-uhi-tokyo/">Open dashboard →</a>
+      <a class="btn btn-secondary" href="https://github.com/ishunteam-png/gis-portfolio/tree/main/16-uhi-tokyo" title="Source on GitHub">↗</a>
+    </div>
+  </article>
+
+  <article class="card">
+    <div class="card-head">
+      <div class="card-num">PROJECT<span class="big">17</span></div>
+      <span class="badge"><span class="live-dot"></span>Live</span>
+    </div>
+    <h3>Coastal Erosion — Florida Atlantic</h3>
+    <p>
+      Annual Sentinel-2 NDWI shoreline migration across 15 stations from Daytona
+      Beach to Miami Beach, 2015–2024. <strong>Daytona Beach −27.4 m</strong> in
+      a decade; <strong>Miami Beach +24.0 m</strong> from federal renourishment.
+      Hurricane Irma 2017 visible as a discrete jump. Year-slider dashboard with
+      per-station 10-yr time-series chart.
+    </p>
+    <div class="pills">
+      <span class="pill">Sentinel-2 NDWI</span>
+      <span class="pill">scikit-image</span>
+      <span class="pill">shapely</span>
+      <span class="pill">FDEP transects</span>
+    </div>
+    <div class="actions">
+      <a class="btn btn-primary" href="17-coastal-erosion-florida/">Open dashboard →</a>
+      <a class="btn btn-secondary" href="https://github.com/ishunteam-png/gis-portfolio/tree/main/17-coastal-erosion-florida" title="Source on GitHub">↗</a>
     </div>
   </article>
 
