@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bengaluru LULC — Sentinel-2 RF Classification</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<style>
+:root {
+  --bg: #0f1419; --panel: #1a1f29; --panel-2: #232a36;
+  --line: #2d3441; --fg: #e7ecf3; --fg-dim: #98a2b3;
+  --accent: #4dabf7; --green: #51cf66; --red: #ff6b6b;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+     color:var(--fg);background:var(--bg);
+     display:grid;grid-template-rows:60px 1fr;grid-template-columns:340px 1fr}
+header{grid-column:1/3;background:var(--panel);border-bottom:1px solid var(--line);
+       display:flex;align-items:center;padding:0 20px;gap:16px}
+header h1{margin:0;font-size:16px;font-weight:600}
+header h1 .sub{color:var(--fg-dim);font-weight:400;margin-left:8px;font-size:13px}
+header .stats{margin-left:auto;display:flex;gap:10px}
+.stat{background:var(--panel-2);padding:5px 12px;border-radius:6px;
+      border:1px solid var(--line);min-width:90px}
+.stat .lbl{color:var(--fg-dim);font-size:10px;text-transform:uppercase;letter-spacing:1px}
+.stat .val{color:var(--fg);font-size:15px;font-weight:600}
+aside{background:var(--panel);border-right:1px solid var(--line);padding:14px 16px;overflow-y:auto}
+aside h2{margin:16px 0 8px;font-size:11px;font-weight:600;color:var(--fg-dim);
+         text-transform:uppercase;letter-spacing:1.4px}
+aside h2:first-of-type{margin-top:0}
+.field{margin-bottom:11px}
+.epoch-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.epoch-tab{background:var(--panel-2);border:1px solid var(--line);
+           padding:8px 0;text-align:center;font-size:12px;font-weight:600;
+           border-radius:6px;cursor:pointer;color:var(--fg-dim);user-select:none}
+.epoch-tab:hover{border-color:var(--accent)}
+.epoch-tab.on{background:rgba(77,171,247,0.10);border-color:var(--accent);color:var(--fg)}
+.class-row{display:flex;align-items:center;gap:8px;font-size:13px;
+           padding:5px 8px;background:var(--panel-2);border:1px solid var(--line);
+           border-radius:6px;margin-bottom:4px;cursor:pointer;user-select:none}
+.class-row.off{opacity:0.35}
+.class-row:hover{border-color:var(--accent)}
+.class-row .swatch{width:14px;height:14px;border-radius:3px;flex:0 0 auto;
+                   border:1px solid rgba(0,0,0,0.4)}
+.class-row .name{flex:1}
+.class-row .area{font-size:11px;color:var(--fg-dim);font-family:ui-monospace,Menlo,Consolas,monospace}
+.class-row .delta{font-size:10px;font-family:ui-monospace,Menlo,Consolas,monospace;
+                  padding:1px 5px;border-radius:3px}
+.class-row .delta.up{background:rgba(255,107,107,0.15);color:#ff8787}
+.class-row .delta.dn{background:rgba(81,207,102,0.15);color:#69db7c}
+.class-row .delta.flat{background:var(--panel);color:var(--fg-dim)}
+#map{width:100%;height:100%;background:#0a0e14}
+.leaflet-tile{filter:grayscale(0.20) brightness(0.78)}
+.leaflet-popup-content-wrapper{background:var(--panel);color:var(--fg);border:1px solid var(--line);
+   border-radius:7px;box-shadow:0 6px 24px rgba(0,0,0,0.4)}
+.leaflet-popup-tip{background:var(--panel);border:1px solid var(--line)}
+.leaflet-popup-content{font-family:inherit;font-size:12px}
+.leaflet-popup-content table{border-collapse:collapse}
+.leaflet-popup-content td{padding:2px 8px 2px 0}
+.leaflet-popup-content td:first-child{color:var(--fg-dim)}
+.foot{color:var(--fg-dim);font-size:11px;margin-top:18px;line-height:1.55;
+      border-top:1px solid var(--line);padding-top:12px}
+.foot a{color:var(--accent);text-decoration:none}
+.back{display:block;text-align:center;background:var(--panel-2);color:var(--accent);
+      text-decoration:none;padding:8px;border-radius:6px;font-size:12px;
+      border:1px solid var(--line);margin-bottom:14px}
+.back:hover{border-color:var(--accent)}
+.validation-block{background:var(--panel-2);border:1px solid var(--line);
+                  padding:10px;border-radius:6px;font-size:11.5px;line-height:1.55}
+.validation-block .row{display:flex;justify-content:space-between;margin-bottom:3px}
+.validation-block .row strong{color:var(--fg)}
+.legend-row{display:flex;align-items:center;gap:6px;font-size:11px;margin-bottom:2px}
+.legend-row .sw{width:12px;height:12px;border-radius:2px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Bengaluru LULC<span class="sub">Sentinel-2 L2A · Random Forest · 6 classes · 1,341 km²</span></h1>
+  <div class="stats">
+    <div class="stat"><div class="lbl">Cells</div><div class="val" id="stat-cells">—</div></div>
+    <div class="stat"><div class="lbl">Built-up Δ</div><div class="val" id="stat-built">—</div></div>
+    <div class="stat"><div class="lbl">Overall acc.</div><div class="val">90.9%</div></div>
+    <div class="stat"><div class="lbl">Kappa</div><div class="val">0.89</div></div>
+  </div>
+</header>
+<aside>
+  <a class="back" href="../">← back to portfolio</a>
+
+  <h2>Epoch</h2>
+  <div class="field">
+    <div class="epoch-tabs">
+      <div class="epoch-tab" data-epoch="2020">2020</div>
+      <div class="epoch-tab on" data-epoch="2024">2024</div>
+      <div class="epoch-tab" data-epoch="change">Δ change</div>
+    </div>
+  </div>
+
+  <h2>Classes — toggle and see km²</h2>
+  <div id="classes"></div>
+
+  <h2>Validation</h2>
+  <div class="validation-block">
+    <div class="row"><span>Overall accuracy</span><strong>90.9%</strong></div>
+    <div class="row"><span>Cohen's κ</span><strong>0.89</strong></div>
+    <div class="row"><span>Validation samples</span><strong>5,532</strong></div>
+    <div class="row"><span>Stratified hold-out</span><strong>20%</strong></div>
+  </div>
+
+  <h2>About</h2>
+  <p style="font-size:12px;color:var(--fg-dim);line-height:1.6">
+    The full pipeline pulls Sentinel-2 L2A from Element84's free STAC, masks clouds via SCL,
+    builds a Jan–Apr dry-season median composite, derives <strong>13 features</strong> (6 bands +
+    NDVI, NDBI, NDWI, MNDWI, BSI, NDMI, BRI), and trains a Random Forest. Predictions are
+    aggregated to a 22×22 grid for this dashboard; the full pipeline writes a per-pixel
+    classified GeoTIFF as well.
+  </p>
+
+  <div class="foot">
+    <strong>Story:</strong> Bengaluru built-up grew <strong>+22.6%</strong> in four years.
+    <strong>Bare soil dropped 24%</strong> — the visible "field-to-construction" lifecycle.
+    Cropland and vegetation lost ~6% each to absorb that.<br><br>
+    Source: Sentinel-2 L2A · Random Forest · Element84 Earth Search STAC ·
+    <a href="https://github.com/ishunteam-png/gis-portfolio/tree/main/07-lulc-classification">source on GitHub</a>
+  </div>
+</aside>
+<div id="map"></div>
+
+<script>
+let DATA = null;
+let state = {epoch: "2024", visible: new Set(["built_up","vegetation","water","cropland","bare","road"])};
+
+const map = L.map('map', {zoomControl:true, preferCanvas:true}).setView([12.97, 77.595], 11);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  {attribution:'&copy; OpenStreetMap &copy; CartoDB', subdomains:'abcd', maxZoom:19}).addTo(map);
+
+let cellLayer = L.layerGroup().addTo(map);
+
+function cellBounds(grid, i, j){
+  const {x0, y0, dx, dy} = grid;
+  return [[y0 + j*dy, x0 + i*dx], [y0 + (j+1)*dy, x0 + (i+1)*dx]];
+}
+
+function popupHtml(epoch, ci, conf, i, j){
+  const name = DATA.epochs[epoch].classes[ci];
+  return `<table>
+    <tr><td><strong>Cell</strong></td><td>(${i}, ${j})</td></tr>
+    <tr><td>Class</td><td><strong>${name.replace('_',' ')}</strong></td></tr>
+    <tr><td>Confidence</td><td>${conf.toFixed(3)}</td></tr>
+    <tr><td>Epoch</td><td>${epoch}</td></tr>
+  </table>`;
+}
+
+function changeColor(c2020, c2024){
+  // Tell the change story: built-up encroachment = red; veg/water loss = orange; stable = grey
+  if(c2020 === c2024) return null;     // stable -> hide
+  const built = DATA.epochs["2024"].classes.indexOf("built_up");
+  if(c2024 === built) return "#FF3030"; // anything → built-up: bold red
+  return "#FF9F40";                     // other transitions: orange
+}
+
+function renderClassPanel(){
+  const cls = document.getElementById('classes');
+  cls.innerHTML = '';
+  const a2020 = DATA.areas_km2["2020"];
+  const a2024 = DATA.areas_km2["2024"];
+  const delta = DATA.areas_km2.delta_pct;
+  DATA.epochs["2024"].classes.forEach((c, idx) => {
+    const color = DATA.epochs["2024"].colors[idx];
+    const a = state.epoch === "2020" ? a2020[c]
+            : state.epoch === "2024" ? a2024[c]
+            : (a2024[c] - a2020[c]).toFixed(1);
+    const d  = delta[c];
+    const dCls = d > 0.5 ? 'up' : d < -0.5 ? 'dn' : 'flat';
+    const dStr = (d > 0 ? '+' : '') + d.toFixed(1) + '%';
+    const row = document.createElement('div');
+    row.className = 'class-row' + (state.visible.has(c) ? '' : ' off');
+    row.dataset.cls = c;
+    const aStr = (state.epoch === 'change' && a >= 0 ? '+' : '') + a + ' km²';
+    row.innerHTML = `
+      <div class="swatch" style="background:${color}"></div>
+      <div class="name">${c.replace('_',' ')}</div>
+      <div class="area">${aStr}</div>
+      <div class="delta ${dCls}">${dStr}</div>`;
+    row.addEventListener('click', () => {
+      if(state.visible.has(c)) state.visible.delete(c);
+      else state.visible.add(c);
+      renderClassPanel();
+      rebuild();
+    });
+    cls.appendChild(row);
+  });
+}
+
+function rebuild(){
+  if(!DATA) return;
+  cellLayer.clearLayers();
+  const epoch = state.epoch;
+
+  if(epoch === "change"){
+    const g2020 = DATA.epochs["2020"];
+    const g2024 = DATA.epochs["2024"];
+    let drawn = 0;
+    const built = g2024.classes.indexOf("built_up");
+    for(let k = 0; k < g2020.cells.length; k++){
+      const [i, j, c0] = g2020.cells[k];
+      const [, , c1, conf] = g2024.cells[k];
+      const col = changeColor(c0, c1);
+      if(!col) continue;
+      // Honor class toggle: hide if the *destination* class is hidden
+      const destName = g2024.classes[c1];
+      if(!state.visible.has(destName)) continue;
+      const b = cellBounds(g2024.grid, i, j);
+      L.rectangle(b, {color: col, weight: 0.6, fillColor: col, fillOpacity: 0.55})
+        .bindPopup(`<table>
+          <tr><td><strong>Change</strong></td><td>${g2020.classes[c0].replace('_',' ')} → ${g2024.classes[c1].replace('_',' ')}</td></tr>
+          <tr><td>Cell</td><td>(${i}, ${j})</td></tr>
+          <tr><td>2024 confidence</td><td>${conf.toFixed(3)}</td></tr>
+        </table>`)
+        .addTo(cellLayer);
+      drawn++;
+    }
+    document.getElementById('stat-cells').textContent = drawn;
+  } else {
+    const g = DATA.epochs[epoch];
+    let drawn = 0;
+    g.cells.forEach(([i, j, ci, conf]) => {
+      const name = g.classes[ci];
+      if(!state.visible.has(name)) return;
+      const col = g.colors[ci];
+      const b = cellBounds(g.grid, i, j);
+      const op = 0.35 + 0.55 * conf;
+      L.rectangle(b, {color: col, weight: 0.4, fillColor: col,
+                      fillOpacity: Math.min(0.85, op)})
+        .bindPopup(popupHtml(epoch, ci, conf, i, j))
+        .addTo(cellLayer);
+      drawn++;
+    });
+    document.getElementById('stat-cells').textContent = drawn;
+  }
+
+  // Header stat: built-up delta
+  document.getElementById('stat-built').textContent =
+    (DATA.areas_km2.delta_pct.built_up >= 0 ? '+' : '')
+    + DATA.areas_km2.delta_pct.built_up.toFixed(1) + '%';
+}
+
+document.querySelectorAll('.epoch-tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.epoch-tab').forEach(x => x.classList.remove('on'));
+    t.classList.add('on');
+    state.epoch = t.dataset.epoch;
+    renderClassPanel();
+    rebuild();
+  });
+});
+
+fetch('data/dashboard_data.json').then(r => r.json()).then(d => {
+  DATA = d;
+  renderClassPanel();
+  rebuild();
+  map.fitBounds([[d.aoi.s, d.aoi.w], [d.aoi.n, d.aoi.e]], {padding:[20, 20]});
+}).catch(err => {
+  document.body.insertAdjacentHTML('beforeend',
+    '<div style="position:fixed;top:60px;left:360px;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:#888;background:rgba(15,20,25,0.85);z-index:600;font-size:14px;">Could not load data/dashboard_data.json. Serve over HTTP.</div>');
+  console.error(err);
+});
+</script>
+</body>
+</html>
