@@ -1,0 +1,21 @@
+{
+  "model_path": "models/pothole_m_seg.pt",
+  "model_classes": {"0": "pothole"},
+  "n_images": 4,
+  "n_detections": 4,
+  "per_image": [
+    {"image": "pothole_01.jpg", "detections": 0, "img_shape": [2797, 2160], "gps_source": "synthetic_demo_route"},
+    {"image": "pothole_02.jpg", "detections": 0, "img_shape": [4624, 2084], "gps_source": "synthetic_demo_route"},
+    {"image": "pothole_03.jpg", "detections": 2, "img_shape": [3456, 4608], "gps_source": "synthetic_demo_route"},
+    {"image": "pothole_04.jpg", "detections": 2, "img_shape": [3456, 4608], "gps_source": "synthetic_demo_route"}
+  ],
+  "by_severity": {"minor": 3, "moderate": 1, "severe": 0},
+  "by_class":    {"pothole": 4},
+  "mean_confidence": 0.434,
+  "ps_join": {
+    "all_detections_subsiding": true,
+    "nearest_ps_v_u_range_mm_yr": [-2.16, -1.324],
+    "nearest_ps_distance_range_m": [27.0, 39.7]
+  },
+  "runtime_seconds": 15.5
+}

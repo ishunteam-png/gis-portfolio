@@ -1,0 +1,8 @@
+[
+  {"n_vehicles": 3, "error": "OR-Tools failed to find a feasible solution"},
+  {"n_vehicles": 4, "error": "OR-Tools failed to find a feasible solution"},
+  {"n_vehicles": 5, "greedy_min": 346.7, "savings_min": 275.4, "ortools_min": 276.3, "ortools_max_route_min": 75.0},
+  {"n_vehicles": 6, "greedy_min": 360.0, "savings_min": 275.4, "ortools_min": 278.6, "ortools_max_route_min": 60.8},
+  {"n_vehicles": 7, "greedy_min": 361.4, "savings_min": 275.4, "ortools_min": 278.4, "ortools_max_route_min": 57.0},
+  {"n_vehicles": 8, "greedy_min": 367.4, "savings_min": 275.4, "ortools_min": 278.4, "ortools_max_route_min": 57.0}
+]

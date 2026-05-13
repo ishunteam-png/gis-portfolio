@@ -1,0 +1,21 @@
+{
+  "depot": {"lat": 41.6934, "lon": 44.8014},
+  "n_stops": 60,
+  "n_vehicles": 5,
+  "capacity_per_vehicle": 20,
+  "service_time_s": 180,
+  "windows": [
+    {"label": "morning",   "open_s": 28800, "close_s": 34200},
+    {"label": "midday",    "open_s": 39600, "close_s": 45000},
+    {"label": "afternoon", "open_s": 54000, "close_s": 59400}
+  ],
+  "total_demand": 91,
+  "network": {"nodes": 2694, "edges": 6097},
+  "results": {
+    "greedy":  {"total_min": 346.72, "max_route_min": 87.47, "per_route_min": [87.47, 56.33, 47.40, 78.20, 77.32], "per_route_stops": [13, 12, 11, 12, 12]},
+    "savings": {"total_min": 275.42, "max_route_min": 77.05, "per_route_min": [77.05, 57.05, 65.52, 38.73, 37.07], "per_route_stops": [16, 13, 11, 10, 10]},
+    "ortools": {"total_min": 276.27, "max_route_min": 74.97, "per_route_min": [29.83, 61.02, 65.55, 44.90, 74.97], "per_route_stops": [8, 14, 13, 12, 13]}
+  },
+  "improvement_ortools_vs_greedy_pct":  20.32,
+  "improvement_ortools_vs_savings_pct": -0.31
+}

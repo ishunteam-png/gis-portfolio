@@ -1,0 +1,45 @@
+{
+  "city": "Jakarta, Indonesia",
+  "aoi_bbox_latlon": {"south": -6.30, "west": 106.74, "north": -6.06, "east": 106.95},
+  "dem": {
+    "source": "AWS Terrain Tiles (Mapzen)",
+    "zoom": 12,
+    "shape": [1406, 1223],
+    "px_metres_approx": 19.2,
+    "elev_min_max_mean": [-55.0, 92.0, 11.77]
+  },
+  "weights": {"hand": 0.40, "slope": 0.25, "impervious": 0.20, "drainage_density": 0.15},
+  "feature_counts": {
+    "waterways":     1078,
+    "buildings":     0,
+    "impervious_lu": 1603,
+    "pervious_lu":   5517,
+    "critical_infra": 7371
+  },
+  "band_pixel_counts": {"low": 558474, "moderate": 387272, "high": 429884, "very high": 343908},
+  "exposure": {
+    "buildings": {"low": 0, "moderate": 0, "high": 0, "very high": 0},
+    "buildings_unknown": 0,
+    "critical": {"low": 1780, "moderate": 2085, "high": 2294, "very high": 1206},
+    "critical_unknown": 6,
+    "critical_by_type_high": {
+      "school": 1360,
+      "kindergarten": 725,
+      "clinic": 627,
+      "fire_hydrant": 338,
+      "hospital": 138,
+      "police": 105,
+      "college": 80,
+      "university": 48,
+      "fire_station": 45,
+      "ambulance_station": 22,
+      "townhall": 3,
+      "assembly_point": 4,
+      "yes": 2,
+      "doctors": 1,
+      "emergency_ward_entrance": 1,
+      "fire_extinguisher": 1
+    }
+  },
+  "runtime_seconds": 626.5
+}

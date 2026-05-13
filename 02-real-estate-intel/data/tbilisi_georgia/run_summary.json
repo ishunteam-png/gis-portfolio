@@ -1,0 +1,94 @@
+{
+  "place": "Tbilisi, Georgia",
+  "area_km2": 504.3,
+  "utm_epsg": 32638,
+  "cell_size_m": 250,
+  "radii_m": {
+    "foot_traffic": 300,
+    "competition": 200,
+    "residential": 300,
+    "tourist": 500,
+    "walkability": 400
+  },
+  "weights": {
+    "foot_traffic": 0.3,
+    "residential": 0.2,
+    "tourist": 0.15,
+    "walkability": 0.2,
+    "competition": 0.15
+  },
+  "n_cells": 8415,
+  "feature_counts": {
+    "cafes": 869,
+    "shops": 10504,
+    "transit": 2863,
+    "tourist": 950,
+    "residential": 15094,
+    "walk_intersections": 62849
+  },
+  "suitability_stats": {
+    "min": 0.0,
+    "max": 1.0,
+    "mean": 0.05765303543524786,
+    "median": 0.014593739211661657
+  },
+  "top5": [
+    {
+      "rank": 1,
+      "score": 1.0,
+      "foot_traffic": 241,
+      "residential": 169,
+      "tourist": 106,
+      "walkability": 397,
+      "competition": 16,
+      "lon": 44.80196165224251,
+      "lat": 41.69308005968974
+    },
+    {
+      "rank": 2,
+      "score": 0.9690750957557993,
+      "foot_traffic": 230,
+      "residential": 129,
+      "tourist": 95,
+      "walkability": 455,
+      "competition": 13,
+      "lon": 44.80195474499108,
+      "lat": 41.69533183344948
+    },
+    {
+      "rank": 3,
+      "score": 0.9256718441992537,
+      "foot_traffic": 131,
+      "residential": 258,
+      "tourist": 129,
+      "walkability": 421,
+      "competition": 13,
+      "lon": 44.80497272428388,
+      "lat": 41.69083342223344
+    },
+    {
+      "rank": 4,
+      "score": 0.8546950410626716,
+      "foot_traffic": 148,
+      "residential": 244,
+      "tourist": 58,
+      "walkability": 456,
+      "competition": 8,
+      "lon": 44.78690314827199,
+      "lat": 41.70431204310497
+    },
+    {
+      "rank": 5,
+      "score": 0.8391676286365919,
+      "foot_traffic": 130,
+      "residential": 240,
+      "tourist": 114,
+      "walkability": 436,
+      "competition": 21,
+      "lon": 44.8049659225894,
+      "lat": 41.6930851972833
+    }
+  ],
+  "validation_spearman": 0.39173223161799686,
+  "runtime_seconds": 223.1
+}
