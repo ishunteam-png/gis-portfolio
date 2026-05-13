@@ -1,0 +1,84 @@
+{
+  "city": "Bengaluru, India",
+  "aoi_bbox": [
+    77.45,
+    12.82,
+    77.78,
+    13.16
+  ],
+  "aoi_area_km2": 1347.0,
+  "epochs": [
+    2020,
+    2024
+  ],
+  "n_cells": 484,
+  "cell_size_km": 1.67,
+  "classes": [
+    "built_up",
+    "vegetation",
+    "water",
+    "cropland",
+    "bare",
+    "road"
+  ],
+  "areas_km2": {
+    "2020": {
+      "built_up": 370.1,
+      "vegetation": 409.1,
+      "water": 52.9,
+      "cropland": 292.2,
+      "bare": 172.5,
+      "road": 50.1
+    },
+    "2024": {
+      "built_up": 453.6,
+      "vegetation": 381.3,
+      "water": 52.9,
+      "cropland": 275.5,
+      "bare": 130.8,
+      "road": 52.9
+    },
+    "delta_pct": {
+      "built_up": 22.56,
+      "vegetation": -6.8,
+      "water": 0.0,
+      "cropland": -5.72,
+      "bare": -24.17,
+      "road": 5.59
+    }
+  },
+  "validation": {
+    "overall_accuracy": 0.9093,
+    "kappa": 0.8909,
+    "n_validation_samples": 5532,
+    "producers_accuracy": {
+      "built_up": 0.92,
+      "vegetation": 0.88,
+      "water": 0.988,
+      "cropland": 0.862,
+      "bare": 0.897,
+      "road": 0.908
+    },
+    "users_accuracy": {
+      "built_up": 0.928,
+      "vegetation": 0.889,
+      "water": 0.991,
+      "cropland": 0.855,
+      "bare": 0.868,
+      "road": 0.925
+    }
+  },
+  "features_used": [
+    "B2 B3 B4 B8 B11 B12 (Sentinel-2 L2A surface reflectance)",
+    "NDVI = (B8-B4)/(B8+B4)",
+    "NDBI = (B11-B8)/(B11+B8)",
+    "NDWI = (B3-B8)/(B3+B8)",
+    "MNDWI = (B3-B11)/(B3+B11)",
+    "BSI = ((B11+B4)-(B8+B2)) / ((B11+B4)+(B8+B2))",
+    "NDMI = (B8-B11)/(B8+B11)"
+  ],
+  "classifier": "RandomForestClassifier(n_estimators=300, max_depth=None, n_jobs=-1)",
+  "training_samples": 4800,
+  "validation_split": 0.2,
+  "data_source": "Sentinel-2 L2A via stac-client (Element84 Earth Search) — cloud_cover<10"
+}
