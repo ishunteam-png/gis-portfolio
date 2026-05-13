@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Park Fire 2024 — Wildfire Spread Simulation</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<style>
+:root {
+  --bg: #0f1419; --panel: #1a1f29; --panel-2: #232a36;
+  --line: #2d3441; --fg: #e7ecf3; --fg-dim: #98a2b3;
+  --accent: #4dabf7; --green: #51cf66; --red: #ff6b6b;
+  --fire-1: #ffeb3b; --fire-2: #ff9800; --fire-3: #d62728; --fire-4: #5e0000;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+     color:var(--fg);background:var(--bg);
+     display:grid;grid-template-rows:60px 1fr;grid-template-columns:360px 1fr}
+header{grid-column:1/3;background:var(--panel);border-bottom:1px solid var(--line);
+       display:flex;align-items:center;padding:0 20px;gap:16px}
+header h1{margin:0;font-size:16px;font-weight:600}
+header h1 .sub{color:var(--fg-dim);font-weight:400;margin-left:8px;font-size:13px}
+header .stats{margin-left:auto;display:flex;gap:10px}
+.stat{background:var(--panel-2);padding:5px 12px;border-radius:6px;
+      border:1px solid var(--line);min-width:90px}
+.stat .lbl{color:var(--fg-dim);font-size:10px;text-transform:uppercase;letter-spacing:1px}
+.stat .val{color:var(--fg);font-size:15px;font-weight:600}
+.stat .val.fire{color:var(--fire-3)}
+aside{background:var(--panel);border-right:1px solid var(--line);padding:14px 16px;overflow-y:auto}
+aside h2{margin:16px 0 8px;font-size:11px;font-weight:600;color:var(--fg-dim);
+         text-transform:uppercase;letter-spacing:1.4px}
+aside h2:first-of-type{margin-top:0}
+.time-slider{background:var(--panel-2);border:1px solid var(--line);
+             border-radius:6px;padding:11px}
+.time-slider input{width:100%;accent-color:var(--fire-3)}
+.time-slider .label{display:flex;justify-content:space-between;margin-top:6px;
+                    color:var(--fg-dim);font-size:11px}
+.time-slider .label .big{color:var(--fg);font-size:16px;font-weight:700}
+.mode-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px}
+.btn{background:var(--panel-2);border:1px solid var(--line);padding:7px 0;
+     text-align:center;font-size:11px;font-weight:600;border-radius:5px;
+     cursor:pointer;color:var(--fg-dim);user-select:none}
+.btn:hover{border-color:var(--accent)}
+.btn.on{border-color:var(--accent);background:rgba(77,171,247,0.12);color:var(--fg)}
+.play-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;margin-top:6px}
+.legend{background:var(--panel-2);border:1px solid var(--line);padding:10px;border-radius:6px}
+.legend .bar{display:flex;height:14px;border-radius:3px;overflow:hidden;margin-bottom:6px}
+.legend .bar span{flex:1}
+.legend .ticks{display:flex;justify-content:space-between;font-size:10px;color:var(--fg-dim);
+              font-family:ui-monospace,Menlo,Consolas,monospace}
+.wind-card{background:var(--panel-2);border:1px solid var(--line);
+           padding:10px;border-radius:6px;display:flex;align-items:center;gap:12px}
+.wind-arrow{width:48px;height:48px;flex:0 0 auto}
+.wind-meta{flex:1;font-size:12px;line-height:1.6}
+.wind-meta .v{color:var(--fg);font-weight:600}
+.bar-chart{background:var(--panel-2);border:1px solid var(--line);padding:8px;border-radius:6px}
+.bar-row{display:flex;align-items:center;gap:6px;margin-bottom:2px;font-size:10.5px}
+.bar-row .h{width:30px;color:var(--fg-dim);font-family:ui-monospace,Menlo,Consolas,monospace}
+.bar-row .bar{flex:1;height:9px;background:rgba(214,40,40,0.12);position:relative;border-radius:2px;overflow:hidden}
+.bar-row .bar .fill{height:100%;background:var(--fire-3)}
+.bar-row .val{width:46px;text-align:right;color:var(--fg);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10px}
+#map{width:100%;height:100%;background:#0a0e14}
+.leaflet-tile{filter:grayscale(0.20) brightness(0.78)}
+.leaflet-popup-content-wrapper{background:var(--panel);color:var(--fg);border:1px solid var(--line);
+   border-radius:7px;box-shadow:0 6px 24px rgba(0,0,0,0.4)}
+.leaflet-popup-tip{background:var(--panel);border:1px solid var(--line)}
+.leaflet-popup-content{font-family:inherit;font-size:12px;min-width:200px}
+.leaflet-popup-content table{border-collapse:collapse;width:100%}
+.leaflet-popup-content td{padding:2px 8px 2px 0}
+.leaflet-popup-content td:first-child{color:var(--fg-dim);font-size:11px}
+.foot{color:var(--fg-dim);font-size:11px;margin-top:18px;line-height:1.55;
+      border-top:1px solid var(--line);padding-top:12px}
+.foot a{color:var(--accent);text-decoration:none}
+.back{display:block;text-align:center;background:var(--panel-2);color:var(--accent);
+      text-decoration:none;padding:8px;border-radius:6px;font-size:12px;
+      border:1px solid var(--line);margin-bottom:14px}
+.back:hover{border-color:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Park Fire 2024<span class="sub">Rothermel CA · 32×32 grid · USGS DEM + LANDFIRE + HRRR · NE Diablo blow-up</span></h1>
+  <div class="stats">
+    <div class="stat"><div class="lbl">Hour</div><div class="val fire" id="stat-hour">0</div></div>
+    <div class="stat"><div class="lbl">Burned (cum)</div><div class="val fire" id="stat-burned">0 km²</div></div>
+    <div class="stat"><div class="lbl">Peak rate</div><div class="val" id="stat-peak">—</div></div>
+    <div class="stat"><div class="lbl">Real fire</div><div class="val">1,738 km²</div></div>
+  </div>
+</header>
+<aside>
+  <a class="back" href="../">← back to portfolio</a>
+
+  <h2>Hour since ignition</h2>
+  <div class="time-slider">
+    <input type="range" id="hour" min="0" max="120" value="120" step="1" />
+    <div class="label">
+      <span>0 h</span>
+      <span class="big" id="hour-label">120 h</span>
+      <span>120 h</span>
+    </div>
+    <div class="play-row">
+      <div class="btn" id="btn-replay">⏮ 0 h</div>
+      <div class="btn" id="btn-play">▶ play</div>
+      <div class="btn" id="btn-pause">⏸ pause</div>
+      <div class="btn" id="btn-end">⏭ end</div>
+    </div>
+  </div>
+
+  <h2>Map mode</h2>
+  <div class="mode-row">
+    <div class="btn on" data-mode="heat">Ignition hour</div>
+    <div class="btn"     data-mode="fuel">Fuel model</div>
+    <div class="btn"     data-mode="slope">Slope</div>
+  </div>
+
+  <h2>Wind right now</h2>
+  <div class="wind-card">
+    <svg class="wind-arrow" viewBox="0 0 48 48" id="wind-arrow">
+      <circle cx="24" cy="24" r="22" fill="none" stroke="#3a4356" stroke-width="1"/>
+      <text x="24" y="9" fill="#98a2b3" font-size="6" text-anchor="middle">N</text>
+      <g id="wind-arrow-g" transform="rotate(0 24 24)">
+        <line x1="24" y1="38" x2="24" y2="12" stroke="#ff6b6b" stroke-width="2"/>
+        <polygon points="24,8 20,16 28,16" fill="#ff6b6b"/>
+      </g>
+    </svg>
+    <div class="wind-meta">
+      <div>From: <span class="v" id="wind-dir">—</span></div>
+      <div>Speed: <span class="v" id="wind-speed">—</span> km/h</div>
+      <div>Phase: <span class="v" id="wind-phase">—</span></div>
+    </div>
+  </div>
+
+  <h2>Legend</h2>
+  <div class="legend">
+    <div class="bar" id="legend-bar"></div>
+    <div class="ticks" id="legend-ticks"><span>0 h</span><span>60 h</span><span>120 h</span></div>
+  </div>
+
+  <h2>Hourly burn rate (km²/h)</h2>
+  <div class="bar-chart" id="rate-chart"></div>
+
+  <div class="foot">
+    <strong>Park Fire</strong> (Butte/Tehama, CA, ignited July 24 2024).
+    Final size <strong>429,603 acres / 1,738 km²</strong>; 64 days to containment.
+    The simulation captures the first 120 h — the Diablo-wind blow-up that
+    drove most of the spread.<br><br>
+    Source: USGS 3DEP DEM · LANDFIRE 40 Scott-Burgan · NOAA HRRR ·
+    <a href="https://github.com/ishunteam-png/gis-portfolio/tree/main/11-wildfire-spread">source on GitHub</a>
+  </div>
+</aside>
+<div id="map"></div>
+
+<script>
+let DATA = null;
+let CELLS = null;
+let state = {hour: 120, mode: "heat", playing: false};
+
+const FUEL_COLORS_DEFAULT = {
+  "GR2": "#fde725", "GS2": "#a0da39", "SH5": "#d62728",
+  "TL3": "#5ec962", "TU5": "#21918c", "NB1": "#404040",
+};
+const HEAT_PALETTE = ["#fff200","#ff9800","#f9460c","#d62728","#7a0000","#3a0000"];
+
+const map = L.map('map', {zoomControl:true, preferCanvas:true}).setView([39.88, -121.58], 10);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  {attribution:'&copy; OpenStreetMap &copy; CartoDB', subdomains:'abcd', maxZoom:17}).addTo(map);
+
+let cellLayer = L.layerGroup().addTo(map);
+let ignitionMarker = null;
+
+function cellBounds(grid, i, j){
+  const {x0, y0, dx, dy} = grid;
+  return [[y0 + j*dy, x0 + i*dx], [y0 + (j+1)*dy, x0 + (i+1)*dx]];
+}
+
+function lerpHex(c1, c2, t){
+  const p = (s) => parseInt(s.slice(1), 16);
+  const a = p(c1), b = p(c2);
+  const ar=(a>>16)&0xff, ag=(a>>8)&0xff, ab=a&0xff;
+  const br=(b>>16)&0xff, bg=(b>>8)&0xff, bb=b&0xff;
+  return `rgb(${Math.round(ar+(br-ar)*t)},${Math.round(ag+(bg-ag)*t)},${Math.round(ab+(bb-ab)*t)})`;
+}
+
+function heatColor(hour, maxH){
+  const t = Math.min(1, hour / maxH);
+  const k = t * (HEAT_PALETTE.length - 1);
+  const lo = Math.floor(k), hi = Math.min(HEAT_PALETTE.length-1, Math.ceil(k));
+  return lerpHex(HEAT_PALETTE[lo], HEAT_PALETTE[hi], k - lo);
+}
+
+function slopeColor(slope){
+  // Green (flat) → yellow → red (steep)
+  const palette = ["#1a9850","#a6d96a","#fee08b","#fdae61","#d73027"];
+  const t = Math.min(1, slope / 35);
+  const k = t * (palette.length - 1);
+  const lo = Math.floor(k), hi = Math.min(palette.length-1, Math.ceil(k));
+  return lerpHex(palette[lo], palette[hi], k - lo);
+}
+
+function colorFor(cell){
+  // cell = [i, j, fuel_idx, slope*10, aspect, elev, ignition_hour]
+  const [, , fuelIdx, slope10, , , ih] = cell;
+  if(state.mode === "fuel"){
+    return FUEL_COLORS_DEFAULT[DATA.fuels[fuelIdx]];
+  }
+  if(state.mode === "slope"){
+    return slopeColor(slope10 / 10);
+  }
+  // Heat mode: show ignited cells up to current hour
+  if(ih < 0 || ih > state.hour) return "#1a1f29";   // unburned this hour
+  return heatColor(ih, DATA.sim_hours);
+}
+
+function popupCell(cell){
+  const [i, j, fuelIdx, slope10, aspect, elev, ih] = cell;
+  const fuel = DATA.fuels[fuelIdx];
+  const ihStr = ih < 0 ? '<span style="color:#69db7c">unburned</span>' :
+                ih === 0 ? '<span style="color:#ff6b6b">ignition point</span>' :
+                `<strong style="color:#ff9800">ignited @ h ${ih}</strong>`;
+  return `<table>
+    <tr><td>Cell</td><td>(${i}, ${j})</td></tr>
+    <tr><td>Fuel</td><td><strong>${fuel}</strong></td></tr>
+    <tr><td>Elevation</td><td>${elev} m</td></tr>
+    <tr><td>Slope</td><td>${(slope10/10).toFixed(1)}°</td></tr>
+    <tr><td>Aspect</td><td>${aspect}°</td></tr>
+    <tr><td>Status</td><td>${ihStr}</td></tr>
+  </table>`;
+}
+
+function rebuild(){
+  if(!DATA || !CELLS) return;
+  cellLayer.clearLayers();
+  const g = DATA.grid;
+  CELLS.forEach(cell => {
+    const c = colorFor(cell);
+    const opacity = state.mode === "heat" && (cell[6] < 0 || cell[6] > state.hour)
+      ? 0.10 : 0.78;
+    L.rectangle(cellBounds(g, cell[0], cell[1]), {
+      color: c, weight: 0.2, fillColor: c, fillOpacity: opacity
+    }).bindPopup(popupCell(cell)).addTo(cellLayer);
+  });
+
+  if(!ignitionMarker){
+    ignitionMarker = L.circleMarker(
+      [DATA.ignition_point.lat, DATA.ignition_point.lon],
+      {radius:8, color:"#ffd43b", weight:2.5, fillColor:"#ffeb3b",
+       fillOpacity:0.9}
+    ).bindPopup(`<strong>Ignition</strong><br>Park Fire — ${DATA.ignition_date}`)
+     .addTo(map);
+  }
+
+  document.getElementById('stat-hour').textContent = state.hour + 'h';
+  const cum = DATA.cum_burned_km2[state.hour] || 0;
+  document.getElementById('stat-burned').textContent = cum.toFixed(0) + ' km²';
+  document.getElementById('stat-peak').textContent =
+    `${DATA.stats.peak_rate_km2h.toFixed(0)} km²/h @ h${DATA.stats.peak_hour}`;
+
+  updateWindUI();
+  updateRateChart();
+}
+
+function updateWindUI(){
+  // Find the wind regime active at current hour
+  const w = DATA.wind_timeline.find(w => state.hour >= w.h0 && state.hour < w.h1)
+            || DATA.wind_timeline[DATA.wind_timeline.length - 1];
+  document.getElementById('wind-dir').textContent = w.dir_from + '° (' + compass(w.dir_from) + ')';
+  document.getElementById('wind-speed').textContent = w.speed_kmh;
+  const phase = (w.h0 === 0) ? "Diablo blow-up" :
+                (w.speed_kmh > 15) ? "weakening NE" : "containment-era";
+  document.getElementById('wind-phase').textContent = phase;
+  document.getElementById('wind-arrow-g').setAttribute('transform',
+    `rotate(${w.dir_from} 24 24)`);
+}
+
+function compass(deg){
+  const dirs = ["N","NE","E","SE","S","SW","W","NW"];
+  return dirs[Math.round(((deg % 360) / 45)) % 8];
+}
+
+function updateRateChart(){
+  const ch = document.getElementById('rate-chart');
+  ch.innerHTML = '';
+  const cum = DATA.cum_burned_km2;
+  const rates = [];
+  for(let h = 1; h < cum.length; h++) rates.push(cum[h] - cum[h-1]);
+  const maxRate = Math.max(...rates);
+  if(maxRate === 0) return;
+  // Show one bar per 4-hour bin so the chart fits
+  const bin = 4;
+  for(let h = 0; h < cum.length - 1; h += bin){
+    let sum = 0;
+    for(let k = 0; k < bin && (h + k) < rates.length; k++) sum += rates[h + k];
+    const w = (sum / (maxRate * bin)) * 100;
+    const row = document.createElement('div');
+    row.className = 'bar-row';
+    if(h <= state.hour && (h + bin) > state.hour) row.style.outline = '1px solid var(--accent)';
+    row.innerHTML = `<div class="h">${h}h</div>
+                     <div class="bar"><div class="fill" style="width:${w}%"></div></div>
+                     <div class="val">${(sum/bin).toFixed(0)}</div>`;
+    ch.appendChild(row);
+  }
+}
+
+function renderLegend(){
+  const bar = document.getElementById('legend-bar');
+  const ticks = document.getElementById('legend-ticks');
+  if(state.mode === "heat"){
+    bar.innerHTML = HEAT_PALETTE.map(c => `<span style="background:${c}"></span>`).join('');
+    ticks.innerHTML = `<span>0 h</span><span>60 h</span><span>120 h</span>`;
+  } else if(state.mode === "fuel"){
+    bar.innerHTML = DATA.fuels.map(f => `<span style="background:${DATA.fuel_colors[f]||FUEL_COLORS_DEFAULT[f]}"></span>`).join('');
+    ticks.innerHTML = DATA.fuels.map(f => `<span>${f}</span>`).join('');
+  } else if(state.mode === "slope"){
+    const pal = ["#1a9850","#a6d96a","#fee08b","#fdae61","#d73027"];
+    bar.innerHTML = pal.map(c => `<span style="background:${c}"></span>`).join('');
+    ticks.innerHTML = `<span>0°</span><span>17°</span><span>≥35°</span>`;
+  }
+}
+
+document.getElementById('hour').addEventListener('input', e => {
+  state.hour = +e.target.value;
+  document.getElementById('hour-label').textContent = state.hour + ' h';
+  rebuild();
+});
+document.querySelectorAll('[data-mode]').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('[data-mode]').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    state.mode = b.dataset.mode;
+    renderLegend();
+    rebuild();
+  });
+});
+
+let playInterval = null;
+function setHour(h){
+  state.hour = h;
+  document.getElementById('hour').value = h;
+  document.getElementById('hour-label').textContent = h + ' h';
+  rebuild();
+}
+document.getElementById('btn-replay').addEventListener('click', () => setHour(0));
+document.getElementById('btn-end').addEventListener('click', () => setHour(120));
+document.getElementById('btn-pause').addEventListener('click', () => {
+  if(playInterval){ clearInterval(playInterval); playInterval = null; }
+});
+document.getElementById('btn-play').addEventListener('click', () => {
+  if(playInterval) return;
+  if(state.hour >= 120) setHour(0);
+  playInterval = setInterval(() => {
+    if(state.hour >= 120){ clearInterval(playInterval); playInterval = null; return; }
+    setHour(state.hour + 2);
+  }, 200);
+});
+
+Promise.all([
+  fetch('data/dashboard_data.json').then(r => r.json()),
+  fetch('data/cells.json').then(r => r.json()),
+]).then(([hdr, cellFile]) => {
+  DATA = hdr;
+  CELLS = cellFile.cells;
+  document.getElementById('hour').max = DATA.sim_hours;
+  document.getElementById('hour').value = DATA.sim_hours;
+  state.hour = DATA.sim_hours;
+  document.getElementById('hour-label').textContent = state.hour + ' h';
+  renderLegend();
+  rebuild();
+  map.fitBounds([[DATA.aoi.s, DATA.aoi.w], [DATA.aoi.n, DATA.aoi.e]], {padding:[20, 20]});
+}).catch(err => {
+  document.body.insertAdjacentHTML('beforeend',
+    '<div style="position:fixed;top:60px;left:380px;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:#888;background:rgba(15,20,25,0.85);z-index:600;font-size:14px;">Could not load data files. Serve over HTTP.</div>');
+  console.error(err);
+});
+</script>
+</body>
+</html>
