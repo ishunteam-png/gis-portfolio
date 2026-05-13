@@ -1,0 +1,90 @@
+{
+  "city": "Lisbon, Portugal",
+  "aoi": {
+    "w": -9.225,
+    "s": 38.69,
+    "e": -9.105,
+    "n": 38.77
+  },
+  "lat": 38.72,
+  "neighbourhoods": [
+    {
+      "name": "Alfama (medieval)",
+      "lon": -9.13,
+      "lat": 38.712,
+      "n_buildings": 90,
+      "total_kwh": 844784.0,
+      "avg_kwh_per_m2": 150.3,
+      "avg_roof_m2": 63.0,
+      "story": "tight medieval streets, low rooftops, moderate obstruction"
+    },
+    {
+      "name": "Baixa / Chiado",
+      "lon": -9.142,
+      "lat": 38.711,
+      "n_buildings": 75,
+      "total_kwh": 2049024.0,
+      "avg_kwh_per_m2": 189.0,
+      "avg_roof_m2": 145.0,
+      "story": "Pombaline grid, large continuous roof blocks"
+    },
+    {
+      "name": "Bairro Alto / Príncipe Real",
+      "lon": -9.15,
+      "lat": 38.717,
+      "n_buildings": 80,
+      "total_kwh": 1092525.0,
+      "avg_kwh_per_m2": 173.3,
+      "avg_roof_m2": 79.0,
+      "story": "mixed-use 3–5 storey, terracotta tiles"
+    },
+    {
+      "name": "Avenidas Novas (modern)",
+      "lon": -9.149,
+      "lat": 38.737,
+      "n_buildings": 110,
+      "total_kwh": 5936003.0,
+      "avg_kwh_per_m2": 207.6,
+      "avg_roof_m2": 260.0,
+      "story": "20C blocks, flat roofs, ideal for arrays"
+    },
+    {
+      "name": "Belém (seaside)",
+      "lon": -9.205,
+      "lat": 38.698,
+      "n_buildings": 95,
+      "total_kwh": 2611077.0,
+      "avg_kwh_per_m2": 202.7,
+      "avg_roof_m2": 136.0,
+      "story": "open seaward exposure, monuments + low-rise mix"
+    }
+  ],
+  "n_buildings": 450,
+  "total_annual_kwh": 12533413.0,
+  "total_annual_mwh": 12533.0,
+  "avg_kwh_per_m2": 185.9,
+  "equiv_homes_pt": 4178.0,
+  "constants": {
+    "panel_efficiency": 0.2,
+    "performance_ratio": 0.83,
+    "lisbon_ghi_flat_kwh_m2_yr": 1820.0,
+    "usable_roof_pct": 0.75,
+    "avg_pt_household_kwh_yr": 3000
+  },
+  "compact_keys": [
+    "i",
+    "lon",
+    "lat",
+    "neighbourhood_idx",
+    "roof_m2",
+    "tilt",
+    "azimuth",
+    "obstruction_pct",
+    "annual_kwh",
+    "kwh_per_m2_x10"
+  ],
+  "data_files": {
+    "buildings": "data/buildings.json"
+  },
+  "data_source": "Copernicus 25 m DEM · OSM building footprints + heights · PVGIS / pvlib irradiance · Lisbon AOI"
+}
