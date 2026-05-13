@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Paris 15-Minute City — Accessibility Dashboard</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<style>
+:root {
+  --bg: #0f1419; --panel: #1a1f29; --panel-2: #232a36;
+  --line: #2d3441; --fg: #e7ecf3; --fg-dim: #98a2b3;
+  --accent: #4dabf7; --green: #51cf66; --gold: #ffd43b;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+     color:var(--fg);background:var(--bg);
+     display:grid;grid-template-rows:60px 1fr;grid-template-columns:340px 1fr}
+header{grid-column:1/3;background:var(--panel);border-bottom:1px solid var(--line);
+       display:flex;align-items:center;padding:0 20px;gap:16px}
+header h1{margin:0;font-size:16px;font-weight:600}
+header h1 .sub{color:var(--fg-dim);font-weight:400;margin-left:8px;font-size:13px}
+header .stats{margin-left:auto;display:flex;gap:10px}
+.stat{background:var(--panel-2);padding:5px 12px;border-radius:6px;
+      border:1px solid var(--line);min-width:80px}
+.stat .lbl{color:var(--fg-dim);font-size:10px;text-transform:uppercase;letter-spacing:1px}
+.stat .val{color:var(--fg);font-size:15px;font-weight:600}
+aside{background:var(--panel);border-right:1px solid var(--line);padding:14px 16px;overflow-y:auto}
+aside h2{margin:16px 0 8px;font-size:11px;font-weight:600;color:var(--fg-dim);
+         text-transform:uppercase;letter-spacing:1.4px}
+aside h2:first-of-type{margin-top:0}
+.toggle{display:flex;align-items:center;justify-content:space-between;background:var(--panel-2);
+        border:1px solid var(--line);border-radius:6px;padding:8px 11px;cursor:pointer;
+        font-size:13px;user-select:none;margin-bottom:6px}
+.toggle:hover{border-color:var(--accent)}
+.toggle.on{border-color:var(--accent);background:rgba(77,171,247,0.10)}
+.toggle .dot{width:10px;height:10px;border-radius:50%;background:var(--fg-dim)}
+.toggle.on .dot{background:var(--accent)}
+.cat-row{display:flex;align-items:center;gap:8px;font-size:13px;
+         padding:5px 9px;background:var(--panel-2);border:1px solid var(--line);
+         border-radius:6px;margin-bottom:4px;cursor:pointer;user-select:none}
+.cat-row.off{opacity:0.35}
+.cat-row .ic{font-size:14px}
+.cat-row .nm{flex:1}
+#map{width:100%;height:100%;background:#0a0e14}
+.leaflet-tile{filter:grayscale(0.20) brightness(0.78)}
+.leaflet-popup-content-wrapper{background:var(--panel);color:var(--fg);border:1px solid var(--line);
+   border-radius:7px;box-shadow:0 6px 24px rgba(0,0,0,0.4)}
+.leaflet-popup-tip{background:var(--panel);border:1px solid var(--line)}
+.leaflet-popup-content{font-family:inherit;font-size:12px;min-width:180px}
+.leaflet-popup-content table{border-collapse:collapse;width:100%}
+.leaflet-popup-content td{padding:2px 8px 2px 0}
+.leaflet-popup-content td:first-child{color:var(--fg-dim)}
+.foot{color:var(--fg-dim);font-size:11px;margin-top:18px;line-height:1.55;
+      border-top:1px solid var(--line);padding-top:12px}
+.foot a{color:var(--accent);text-decoration:none}
+.back{display:block;text-align:center;background:var(--panel-2);color:var(--accent);
+      text-decoration:none;padding:8px;border-radius:6px;font-size:12px;
+      border:1px solid var(--line);margin-bottom:14px}
+.back:hover{border-color:var(--accent)}
+.score-legend{background:var(--panel-2);border:1px solid var(--line);
+              padding:10px;border-radius:6px}
+.score-legend .bar{display:flex;height:14px;border-radius:3px;overflow:hidden;margin-bottom:6px}
+.score-legend .bar span{flex:1}
+.score-legend .ticks{display:flex;justify-content:space-between;font-size:10px;color:var(--fg-dim)}
+.stations{display:flex;flex-direction:column;gap:3px}
+.station{background:var(--panel-2);border:1px solid var(--line);border-radius:6px;
+         padding:6px 10px;font-size:12px;cursor:pointer;user-select:none;
+         display:flex;justify-content:space-between;align-items:center}
+.station:hover{border-color:var(--accent)}
+.station.on{border-color:var(--gold);background:rgba(255,212,59,0.10)}
+.station .nm{font-weight:600}
+.station .sc{color:var(--fg-dim);font-size:10px}
+.mode-row{display:flex;gap:4px;margin-bottom:8px}
+.mode-btn{flex:1;background:var(--panel-2);border:1px solid var(--line);
+          padding:6px 0;text-align:center;font-size:11px;font-weight:600;
+          border-radius:5px;cursor:pointer;color:var(--fg-dim)}
+.mode-btn.on{border-color:var(--accent);background:rgba(77,171,247,0.10);color:var(--fg)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Paris 15-Minute City<span class="sub">Ville du quart d'heure · OSM walk graph · Moreno 2016</span></h1>
+  <div class="stats">
+    <div class="stat"><div class="lbl">Cells</div><div class="val">625</div></div>
+    <div class="stat"><div class="lbl">Full 15-min</div><div class="val" id="stat-full">—</div></div>
+    <div class="stat"><div class="lbl">≥ 5 of 6</div><div class="val" id="stat-near">—</div></div>
+    <div class="stat"><div class="lbl">Cell size</div><div class="val">350 m</div></div>
+  </div>
+</header>
+<aside>
+  <a class="back" href="../">← back to portfolio</a>
+
+  <h2>Map mode</h2>
+  <div class="mode-row">
+    <div class="mode-btn on" data-mode="score">Score</div>
+    <div class="mode-btn" data-mode="cat">By category</div>
+  </div>
+
+  <h2 id="catlist-title">Categories</h2>
+  <div id="catlist"></div>
+
+  <h2>Showcase Métro stations</h2>
+  <p style="font-size:11px;color:var(--fg-dim);margin:0 0 8px;line-height:1.5">
+    Click one to see its <strong>5 / 10 / 15-min</strong> isochrones and 15-min POI counts.
+  </p>
+  <div class="stations" id="stations"></div>
+
+  <h2>Score legend</h2>
+  <div class="score-legend">
+    <div class="bar" id="legend-bar"></div>
+    <div class="ticks"><span>0 / 6</span><span>3 / 6</span><span>6 / 6</span></div>
+  </div>
+
+  <div class="foot">
+    <strong>Method:</strong> OSMnx pedestrian graph, single-source Dijkstra capped at 1,250 m
+    (15 min @ 5 km/h). A cell "reaches" a category if any matching POI is in the
+    reached node set.<br><br>
+    <strong>87.7%</strong> of cells reach ≥ 5 of 6 categories. The 7% scoring 2/6 are
+    inside <strong>Bois de Boulogne</strong> and <strong>Bois de Vincennes</strong>.<br><br>
+    Source: OpenStreetMap · OSMnx · NetworkX ·
+    <a href="https://github.com/ishunteam-png/gis-portfolio/tree/main/08-15min-city">source on GitHub</a>
+  </div>
+</aside>
+<div id="map"></div>
+
+<script>
+let DATA = null;
+let state = {mode: "score", catVisible: new Set(), focusedStation: null};
+
+const CAT_ICONS = {live:"🏠", work:"💼", supply:"🛒", care:"🏥", learn:"🎓", enjoy:"🎭"};
+
+const map = L.map('map', {zoomControl:true, preferCanvas:true}).setView([48.8566, 2.3522], 12);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  {attribution:'&copy; OpenStreetMap &copy; CartoDB', subdomains:'abcd', maxZoom:19}).addTo(map);
+
+let cellLayer = L.layerGroup().addTo(map);
+let stationLayer = L.layerGroup().addTo(map);
+let isoLayer = L.layerGroup().addTo(map);
+
+function cellBounds(grid, i, j){
+  const {x0, y0, dx, dy} = grid;
+  return [[y0 + j*dy, x0 + i*dx], [y0 + (j+1)*dy, x0 + (i+1)*dx]];
+}
+
+function renderLegend(){
+  const colors = DATA.grid.score_colors;
+  document.getElementById('legend-bar').innerHTML =
+    colors.map(c => `<span style="background:${c}"></span>`).join('');
+}
+
+function renderCatList(){
+  const cls = document.getElementById('catlist');
+  const ttl = document.getElementById('catlist-title');
+  cls.innerHTML = '';
+  if(state.mode === "score"){
+    ttl.textContent = "Score colour shows categories reached";
+    cls.innerHTML = `<p style="font-size:11.5px;color:var(--fg-dim);line-height:1.6;margin:0">
+      Red = few categories, green = all 6. Click a cell for its per-category walk times.</p>`;
+  } else {
+    ttl.textContent = "Click a category to view its walk time";
+    DATA.categories.forEach(cat => {
+      const row = document.createElement('div');
+      row.className = 'cat-row' + (state.catVisible.has(cat) ? '' : ' off');
+      row.dataset.cat = cat;
+      row.innerHTML = `<span class="ic">${CAT_ICONS[cat]}</span>
+                      <span class="nm">${DATA.category_labels[cat]}</span>`;
+      row.addEventListener('click', () => {
+        // Single-select for "by category" mode
+        state.catVisible = new Set([cat]);
+        renderCatList();
+        rebuild();
+      });
+      cls.appendChild(row);
+    });
+  }
+}
+
+function renderStations(){
+  const cont = document.getElementById('stations');
+  cont.innerHTML = '';
+  DATA.showcases.forEach((s, idx) => {
+    const row = document.createElement('div');
+    row.className = 'station' + (state.focusedStation === idx ? ' on' : '');
+    row.innerHTML = `<span class="nm">${s.name}</span><span class="sc">score ${s.score_15min}/6</span>`;
+    row.addEventListener('click', () => {
+      state.focusedStation = state.focusedStation === idx ? null : idx;
+      renderStations();
+      renderIsochrones();
+    });
+    cont.appendChild(row);
+  });
+}
+
+function cellTime(times, k){
+  // times are stored as int tenths of a minute if time_scale is set, else as floats
+  const scale = DATA.grid.time_scale || 1;
+  return times[k] / scale;
+}
+
+function popupCell(cell){
+  const [i, j, score, times] = cell;
+  const rows = DATA.categories.map((c, k) => {
+    const t = cellTime(times, k);
+    const col = t <= 15 ? "#69db7c" : "#ff6b6b";
+    return `<tr><td>${CAT_ICONS[c]} ${c}</td><td style="color:${col}"><strong>${t.toFixed(1)} min</strong></td></tr>`;
+  }).join('');
+  return `<table>
+    <tr><td><strong>Cell</strong></td><td>(${i}, ${j})</td></tr>
+    <tr><td><strong>Score</strong></td><td><strong>${score} / 6</strong></td></tr>
+    ${rows}</table>`;
+}
+
+function colorForScore(s){
+  return DATA.grid.score_colors[s] || "#444";
+}
+
+function colorForMinutes(t){
+  // green → yellow → orange → red as time goes up
+  if(t <= 5)  return "#1a9850";
+  if(t <= 10) return "#a6d96a";
+  if(t <= 15) return "#fdae61";
+  if(t <= 20) return "#f46d43";
+  return "#a50026";
+}
+
+function rebuild(){
+  if(!DATA) return;
+  cellLayer.clearLayers();
+  const g = DATA.grid;
+  if(state.mode === "score"){
+    g.cells.forEach(cell => {
+      const [i, j, score] = cell;
+      const c = colorForScore(score);
+      L.rectangle(cellBounds(g.grid, i, j), {
+        color: c, weight: 0.3, fillColor: c, fillOpacity: 0.55
+      }).bindPopup(popupCell(cell)).addTo(cellLayer);
+    });
+  } else {
+    if(state.catVisible.size === 0){
+      state.catVisible = new Set([DATA.categories[0]]);
+      renderCatList();
+    }
+    const cat = [...state.catVisible][0];
+    const catIdx = DATA.categories.indexOf(cat);
+    g.cells.forEach(cell => {
+      const [i, j, , times] = cell;
+      const t = cellTime(times, catIdx);
+      const c = colorForMinutes(t);
+      L.rectangle(cellBounds(g.grid, i, j), {
+        color: c, weight: 0.3, fillColor: c, fillOpacity: 0.6
+      }).bindPopup(popupCell(cell)).addTo(cellLayer);
+    });
+  }
+}
+
+function renderIsochrones(){
+  isoLayer.clearLayers();
+  if(state.focusedStation === null) return;
+  const s = DATA.showcases[state.focusedStation];
+  // Draw 15, 10, 5 min from outside in (so 5-min is on top)
+  const layers = [
+    {pts: s.iso15, color: "#fbc02d", label: "15 min"},
+    {pts: s.iso10, color: "#fb8c00", label: "10 min"},
+    {pts: s.iso5,  color: "#e64a19", label: "5 min"},
+  ];
+  layers.forEach(l => {
+    const latlngs = l.pts.map(([x, y]) => [y, x]);
+    L.polygon(latlngs, {
+      color: l.color, weight: 2.0, fillColor: l.color, fillOpacity: 0.18,
+      dashArray: l.label === "15 min" ? "6 4" : null,
+    }).bindPopup(`<strong>${s.name}</strong><br>${l.label} walk isochrone`)
+      .addTo(isoLayer);
+  });
+  // Marker + POI popup
+  const poi = s.poi_counts;
+  const rows = DATA.categories.map(c =>
+    `<tr><td>${CAT_ICONS[c]} ${c}</td><td><strong>${poi[c].toLocaleString()}</strong></td></tr>`
+  ).join('');
+  L.circleMarker([s.lat, s.lon], {
+    radius: 8, color: "#ffd43b", weight: 2.5, fillColor: "#ffd43b", fillOpacity: 0.9
+  }).bindPopup(`<table>
+    <tr><td colspan="2"><strong>${s.name}</strong></td></tr>
+    <tr><td colspan="2" style="color:var(--fg-dim);font-size:11px">POI counts in 15-min walk</td></tr>
+    ${rows}
+  </table>`).addTo(isoLayer).openPopup();
+}
+
+function renderStationMarkers(){
+  stationLayer.clearLayers();
+  DATA.showcases.forEach((s, idx) => {
+    L.circleMarker([s.lat, s.lon], {
+      radius: 5, color: "#ffd43b", weight: 1.5,
+      fillColor: "#ffd43b", fillOpacity: 0.55
+    }).bindTooltip(s.name, {direction: "top", offset: [0, -6]})
+      .on('click', () => {
+        state.focusedStation = state.focusedStation === idx ? null : idx;
+        renderStations();
+        renderIsochrones();
+      })
+      .addTo(stationLayer);
+  });
+}
+
+document.querySelectorAll('.mode-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.mode-btn').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    state.mode = b.dataset.mode;
+    if(state.mode === "cat" && state.catVisible.size === 0){
+      state.catVisible = new Set([DATA.categories[0]]);
+    }
+    renderCatList();
+    rebuild();
+  });
+});
+
+// Header + cells + showcases are split into three files so each fits cleanly
+// through MCP tooling. Backwards-compatible: if `grid.cells` is already
+// present in dashboard_data.json (legacy single-file build), use it.
+Promise.all([
+  fetch('data/dashboard_data.json').then(r => r.json()),
+  fetch('data/grid.json').then(r => r.json()).catch(() => null),
+  fetch('data/showcases.json').then(r => r.json()).catch(() => null),
+]).then(([hdr, gridFile, showFile]) => {
+  // Merge — old layout had everything under `grid` + `showcases` keys
+  const grid = hdr.grid_meta || hdr.grid || {};
+  grid.cells = (gridFile && gridFile.cells) || (hdr.grid && hdr.grid.cells) || [];
+  const showcases = (showFile && showFile.showcases) || hdr.showcases || [];
+  DATA = {
+    ...hdr,
+    grid: grid,
+    showcases: showcases,
+  };
+  document.getElementById('stat-full').textContent = grid.full_15min_pct.toFixed(1) + '%';
+  const near = grid.score_pct.score_5 + grid.score_pct.score_6;
+  document.getElementById('stat-near').textContent = near.toFixed(1) + '%';
+  renderLegend();
+  renderCatList();
+  renderStations();
+  renderStationMarkers();
+  rebuild();
+  map.fitBounds([[DATA.aoi.s, DATA.aoi.w], [DATA.aoi.n, DATA.aoi.e]], {padding:[20, 20]});
+}).catch(err => {
+  document.body.insertAdjacentHTML('beforeend',
+    '<div style="position:fixed;top:60px;left:360px;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:#888;background:rgba(15,20,25,0.85);z-index:600;font-size:14px;">Could not load data files. Serve over HTTP.</div>');
+  console.error(err);
+});
+</script>
+</body>
+</html>
