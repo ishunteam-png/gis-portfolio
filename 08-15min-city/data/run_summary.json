@@ -1,0 +1,54 @@
+{
+  "city": "Paris, France",
+  "aoi_bbox": [
+    2.2241,
+    48.8156,
+    2.4699,
+    48.9023
+  ],
+  "aoi_area_km2": 172.8,
+  "n_cells": 625,
+  "cell_size_m": 718.0,
+  "categories": [
+    "live",
+    "work",
+    "supply",
+    "care",
+    "learn",
+    "enjoy"
+  ],
+  "walk_speed_kmh": 5.0,
+  "iso_thresholds_min": [
+    5,
+    10,
+    15
+  ],
+  "full_15min_pct": 58.6,
+  "score_distribution": {
+    "score_0": 0.0,
+    "score_1": 0.5,
+    "score_2": 7.0,
+    "score_3": 1.6,
+    "score_4": 3.2,
+    "score_5": 29.1,
+    "score_6": 58.6
+  },
+  "n_showcases": 8,
+  "showcase_stations": [
+    "République",
+    "Châtelet",
+    "Bastille",
+    "Belleville",
+    "Montparnasse",
+    "Trocadéro",
+    "Stalingrad",
+    "Nation"
+  ],
+  "stack": [
+    "OSMnx 2.1 (walk graph from OSM)",
+    "NetworkX 3.6 (single-source Dijkstra for isochrones)",
+    "Shapely 2.0 (alpha-shape boundary)",
+    "GeoPandas 1.1",
+    "Leaflet 1.9 (dashboard)"
+  ]
+}
