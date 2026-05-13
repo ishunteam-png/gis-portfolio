@@ -1,90 +1,36 @@
 # GIS / Geospatial Portfolio — ISHU
 
-End-to-end geospatial projects covering **InSAR remote sensing, multi-factor location intelligence, advanced VRP, compound flood-risk modelling, interactive web mapping, and GeoAI with cross-project joins**. Every project ships with real data, a written methodology, reproducible code, validation, and a "what I'd build next" section.
+Six projects I built over the past few months while getting more serious about GIS. Each one tries to answer a real spatial question, runs end-to-end from public data, and ships with the code, the maps, and a writeup of what I did and what I got stuck on.
 
-> **What I build:** measurable answers to spatial questions — millimetre-scale road subsidence from satellites, "where should this café open" *and verify the answer agrees with reality*, "fastest 5-vehicle plan for 60 deliveries with time windows", "which Jakarta schools are most flood-exposed". Not tutorial maps.
+Everything was done locally on my own machine. No managed cloud services, no paid APIs.
 
----
+## The six projects
 
-## Stack
-
-**GIS** QGIS · ArcGIS basics · GDAL · PostGIS  
-**Python** GeoPandas · Rasterio · Shapely · scipy.ndimage · NumPy · scikit-learn  
-**Remote sensing** Sentinel-1 SAR · MintPy · SNAP · SNAPHU · PyAPS3 · ERA5  
-**Web mapping** Leaflet · Chroma.js · Folium · Streamlit · Plotly  
-**Routing / networks** OSMnx · NetworkX · OR-Tools · Clarke-Wright savings  
-**GeoAI** YOLOv8-seg · ultralytics · PyTorch · OpenCV  
-**Validation** Spearman ρ · sensitivity analysis · cross-project joins  
-**Infra** AWS EC2 · S3 · Docker
-
----
-
-## Projects
-
-| # | Project | Headline | Tech |
+| # | Project | Question it answers | Live map |
 |---|---|---|---|
-| **1** | **[InSAR Road Subsidence — Delhi](01-insar-road-subsidence/)** | 2,555 PS · V_U −10.3 to +4.7 mm/yr · strict EGMS-L3 · 2D V_U + V_E decomposition · $1 AWS cost | Sentinel-1 · MintPy · SNAP · PyAPS3 |
-| **2** | **[Real Estate Location Intelligence — Tbilisi (any city via `--city`)](02-real-estate-intel/)** | 8,415 cells over 504 km² · **5 signals incl. walkability (62,849 intersections)** · **validated Spearman ρ = 0.39 vs real cafés** | OSMnx · GeoPandas · scipy.stats · Folium |
-| **3** | **[Advanced Capacitated VRP w/ Time Windows — Tbilisi](03-route-optimization/)** | 60 stops · 5 vehicles · 3 windows · capacity 20 · **3 algorithms compared** (greedy / Clarke-Wright 1964 / OR-Tools) · OR-Tools **−20.3 %** vs greedy · fleet-size sensitivity sweep | OSMnx · NetworkX · OR-Tools |
-| **4** | **[Jakarta Compound Flood Risk (multi-factor)](04-flood-risk/)** | World's most flood-prone megacity · **4-factor risk index** (HAND + slope + drainage density + imperviousness) · **1,360 schools + 138 hospitals exposed** to high+VH risk | rasterio · scipy.ndimage · OSMnx |
-| **5** | **[Web GIS Dashboard — Delhi PS](05-web-gis-dashboard/)** | Single-file Leaflet · 2,656 PS · **6 presets, split view, live histogram, URL hash state** for shareable views | Leaflet · Chroma.js · vanilla JS |
-| **6** | **[GeoAI Road Damage + Cross-Project Join to Project 1](06-geoai-road-damage/)** | YOLOv8m-seg · **mask-area severity** (not bbox) · **all 4 detections land on subsiding PS** — operationalises the InSAR→damage causal chain | ultralytics · PyTorch · OpenCV · GeoPandas |
+| **1** | [InSAR Road Subsidence — Delhi](01-insar-road-subsidence/) | Is this stretch of road sinking, and by how much? | [Dashboard](https://ishunteam-png.github.io/gis-portfolio/01-insar-road-subsidence/) |
+| **2** | [Café Location Intelligence — Tbilisi](02-real-estate-intel/) | Where in Tbilisi should I open a café? | [Dashboard](https://ishunteam-png.github.io/gis-portfolio/02-real-estate-intel/) |
+| **3** | [Delivery Route Optimization — Tbilisi](03-route-optimization/) | Given 60 stops and 5 vans, what's the fastest set of routes? | [Dashboard](https://ishunteam-png.github.io/gis-portfolio/03-route-optimization/) |
+| **4** | [Jakarta Compound Flood Risk](04-flood-risk/) | If Jakarta floods tomorrow, which schools and hospitals are exposed? | [Dashboard](https://ishunteam-png.github.io/gis-portfolio/04-flood-risk/) |
+| **5** | [Web GIS Dashboard — Delhi PS](05-web-gis-dashboard/) | Let a non-technical stakeholder explore the data themselves | [Dashboard](https://ishunteam-png.github.io/gis-portfolio/05-web-gis-dashboard/) |
+| **6** | [GeoAI Road Damage Detection](06-geoai-road-damage/) | Can a model spot potholes in dashcam frames and georeference them? | [Dashboard](https://ishunteam-png.github.io/gis-portfolio/06-geoai-road-damage/) |
 
-Click into each folder for: hero figure, problem statement, labelled approach diagram, results numbers, validation, limitations, and "what I'd build next". Most projects run end-to-end from `py scripts/<x>.py` in under a minute on a laptop.
+Click into each folder for the README, the methodology, the data, and the code.
 
----
+## What's interesting at the joins
 
-## 🚀 Live demo
+The most useful piece of work isn't in any single project, it's where two of them touch:
 
-**Project 5 dashboard:** https://ishunteam-png.github.io/gis-portfolio/05-web-gis-dashboard/
+- **Project 1 and Project 6.** The InSAR pipeline measures where the ground is sinking. The road-damage model finds where the surface is cracked. Every one of the four demo detections lands within 50 m of a Persistent Scatterer that's already subsiding at −1.3 to −2.0 mm/yr. That's the early-warning loop you actually want.
+- **Project 1 and Project 5.** The dashboard is the way a stakeholder who doesn't run Python explores the InSAR data.
+- **Project 2 and Project 4** (potential). The café-suitability ranking, but reweighted to exclude cells inside the flood-risk band. One day of work; both pipelines exist.
 
----
+## What I used
 
-## What makes this portfolio different
+Python 3.14 with GeoPandas, Rasterio, Shapely, scipy.ndimage, NetworkX, OSMnx, OR-Tools, ultralytics + PyTorch (CPU) for the YOLO bits, MintPy + SNAP for the InSAR. Leaflet + Chroma.js on the front end. Matplotlib for the static figures. Folium for the interactive HTML when I didn't need a custom dashboard.
 
-Every project hits at least three of:
-
-- **Real open data** (Sentinel-1 / OSM / Mapzen DEM / Wikimedia) — no toy datasets
-- **A validation step** — Spearman ρ in #2, algorithm comparison in #3, component diagnostics in #4, cross-project join in #6
-- **A "what I'd build next"** section that's honest about limitations
-- **A cross-project join or pipeline tie-in** — Project 5 visualises Project 1's PS dataset; Project 6 joins to Project 1; Project 4's structure is reusable for any city; Project 2 takes `--city` as a parameter
-- **Runtime stated** — every project says how long the full pipeline takes on a laptop
-
-The most interesting work in the portfolio isn't in any single project, it's at the joins:
-
-- **Project 1 ↔ Project 6** — subsurface InSAR motion predicts surface road damage. The pipeline is wired end-to-end; in the demo all 4 damage detections fall on PS that are subsiding at −1.3 to −2.0 mm/yr.
-- **Project 1 → Project 5** — the dashboard renders the InSAR PS dataset and lets a non-GIS stakeholder explore it without code.
-- **Project 2 → Project 4 (potential)** — café-suitability adjusted for flood exposure. Drop top-20 candidates that fall inside a high-risk band. Both pipelines exist; 1-day join.
-
----
-
-## Repository layout
-
-```
-0X-<project>/
-├── README.md          ← problem · approach · results · validation · what's next
-├── scripts/           ← runnable Python (or HTML/JS for #5)
-├── data/              ← inputs + outputs (GeoJSON / GeoTIFF / JSON summaries)
-└── assets/            ← hero images, charts, interactive HTML, screenshots
-```
-
----
-
-## How to reproduce
-
-```bash
-pip install osmnx geopandas folium matplotlib scipy networkx     # used in #2 #3 #4 #6
-pip install rasterio                                              # #4
-pip install ortools                                               # #3
-pip install ultralytics opencv-python pillow                      # #6
-```
-
-Project #5 (web dashboard) needs no install — open `05-web-gis-dashboard/index.html` over `python -m http.server` and you're done.
-
-Project #1 (InSAR pilot) is the only one whose **full** pipeline doesn't fit in this repo (it requires a Sentinel-1 SLC stack on EC2) — what's here is the headline deliverable, sample data, and writeup; the working pipeline lives in a separate repo.
-
----
+No proprietary software anywhere. All the data is from open sources: Sentinel-1 via ASF Vertex, OpenStreetMap via Overpass, Mapzen terrain tiles, ERA5 atmospheric reanalysis, Wikimedia Commons for the pothole images, HuggingFace for the pre-trained YOLO weights.
 
 ## Contact
 
-Email: singhishu2060@gmail.com
+singhishu2060@gmail.com

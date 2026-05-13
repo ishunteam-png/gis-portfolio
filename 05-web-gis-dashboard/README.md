@@ -1,6 +1,6 @@
-# Project 5 — Web GIS Dashboard (advanced)
+# Project 5 — Web GIS Dashboard
 
-**Single-file Leaflet dashboard for the Project 1 Delhi PS dataset, with one-click presets, side-by-side split view, live histogram, shareable URL state, and zero build pipeline. ~480 lines of vanilla JS.**
+The whole portfolio is mostly Python scripts and static PNGs. This is the one piece a non-technical stakeholder can actually open and explore themselves. A single HTML file, no build pipeline, no framework, no backend. Just Leaflet plus a couple of CDN libraries reading the GeoJSON that Project 1 produced.
 
 ## 🚀 Live demo
 
@@ -8,64 +8,53 @@
 
 ![Dashboard hero](assets/dashboard_hero.png)
 
----
-
-## TL;DR
-
-A working geospatial dashboard for the Delhi InSAR Persistent Scatterers, built as **one HTML file** with no build pipeline. Just Leaflet + Chroma.js from CDN reading the project's GeoJSON.
+## What's in it
 
 | | |
 |---|---|
-| **File** | [`index.html`](index.html) (single file, ~480 lines) |
-| **Data** | [`data/persistent_scatterers.geojson`](data/persistent_scatterers.geojson) (stratified-sample for live demo; full 2,656 PS for local) |
-| **Dependencies** | Leaflet 1.9, Chroma.js 2.4 (both CDN) |
-| **Build step** | none — open over HTTP, works |
+| File | [`index.html`](index.html) (single file, ~500 lines of vanilla JS) |
+| Data | [`data/persistent_scatterers.geojson`](data/persistent_scatterers.geojson) (45 KB, 320 PS sampled from the full pilot) |
+| Dependencies | Leaflet 1.9, Chroma.js 2.4, both from CDN |
+| Build step | none |
 
----
+What the dashboard does:
 
-## Features (v2)
+1. **Six one-click presets.** "All PS", "Subsidence ≥ 3 mm/yr", "Severe (≥ 5)", "Stable band (±1)", "Strong east motion", "Reset". Each clicks the right filter values and colour mode into place.
+2. **Split view.** Toggle a side-by-side mode where the left map shows vertical velocity and the right shows east-west. Pan/zoom on either, the other follows. Useful for the question "do the subsiding cells also have a horizontal component?"
+3. **Live histogram.** A small Canvas histogram in the sidebar shows the V_U distribution of *currently-visible* points (after filters apply). Bars are coloured with the same diverging ramp as the map.
+4. **URL hash state.** Every filter, colour mode, and toggle gets encoded in the URL hash. There's a "Copy shareable URL" button. Paste it into another browser and you see exactly the same view I was looking at. This is what makes the dashboard *collaborative* rather than just *interactive*.
+5. **Per-PS popups** with vertical, east-west, both coherences, lat/lon.
+6. **Top-20 highlight toggle** — yellow rings around the 20 most-subsiding PS in the current filter window.
+7. **Live stat cards** in the header showing the count and the mean/min/max V_U of the visible set.
 
-1. **One-click presets** — six curated filter combinations.
-2. **Split view** — toggle side-by-side V_U / V_E maps that pan/zoom together.
-3. **Live histogram** — Canvas histogram of currently-visible V_U distribution.
-4. **URL hash state + Copy link** — every filter encoded in the URL; "Copy shareable URL" puts it on your clipboard.
-5. **Six colour modes** — V_U, V_E, LOS ASC, LOS DSC.
-6. **Live stat cards** — visible count, mean/min/max V_U recompute on every drag.
-7. **Per-PS popups** with all attributes.
-8. **AOI outline toggle**.
-9. **Canvas-mode rendering** for sub-50 ms filter response.
+## Why a single file, no framework
 
----
+Three reasons:
+
+- **Portability.** It runs on GitHub Pages, S3, a USB stick, anywhere. No build, no Webpack, no Node version pinning.
+- **Auditability.** A reviewer can read every line of dashboard logic in one screen scroll. There are no framework abstractions hiding what's happening.
+- **Performance.** With `preferCanvas: true`, Leaflet draws all 320 points as Canvas circles in one pass. Filter changes re-render in <50 ms. A React equivalent would be 5–10x slower at this point count for no UX benefit.
+
+When the data grows past ~100,000 points the single-file approach hits its limit and you need vector tiles (PMTiles via maplibre-gl is the modern stack). Below that, this is the right architecture.
 
 ## Screenshots
 
-### Default — all PS coloured by V_U, with histogram, stats, presets, AOI outline
-![Dashboard hero](assets/dashboard_hero.png)
+![All PS coloured by V_U with histogram + presets + AOI outline](assets/dashboard_hero.png)
 
-### Top-20 most-subsiding highlighted
-![Top-20 highlight](assets/dashboard_top20.png)
+![Top-20 most-subsiding highlighted with yellow rings](assets/dashboard_top20.png)
 
-### V_E mode with V_U filter
-![V_E filter](assets/dashboard_ve_filter.png)
-
----
+![V_E mode with V_U max filter applied, showing only actively-subsiding PS](assets/dashboard_ve_filter.png)
 
 ## Run it locally
 
 ```bash
 cd 05-web-gis-dashboard
 py -m http.server 8000
-# → http://localhost:8000/index.html
+# then open http://localhost:8000/index.html
 ```
 
-Deploy: GitHub Pages / Cloudflare Pages / Vercel — no build command.
+Deploy: drop the folder onto any static host. No build command.
 
----
+## What I'd add next
 
-## What I'd build next
-
-1. Time-series sparkline in popup.
-2. Box-select export (drag rectangle, download subset).
-3. Catalogue mode — drop in any GeoJSON, auto-build colour scale + histogram.
-4. Vector-tile mode (PMTiles + maplibre-gl) for 100k+ PS.
-5. React v3 when single-file architecture is outgrown.
+A small time-series sparkline in each PS popup, since the underlying data has 3 years of LOS samples that the dashboard isn't currently surfacing. Then drag-rectangle selection to export a subset as GeoJSON. Then a "catalogue mode" that turns the same code into a generic GeoJSON viewer for any numeric property — which would also work for Projects 2, 4, and 6.

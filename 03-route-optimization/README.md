@@ -1,68 +1,69 @@
-# Project 3 — Advanced Capacitated VRP with Time Windows
+# Project 3 — Capacitated VRP with Time Windows (Tbilisi)
 
-**Three algorithms on a real CVRP-TW instance —  60 stops, 5 vehicles, parcel capacities, 3 delivery windows, real OSM drivable network, real OSM POI destinations — solved with classical (greedy NN), heuristic (Clarke-Wright 1964), and modern (OR-Tools GLS) approaches. Then sweep fleet size to find the diminishing-returns point.**
+The core question is the one any courier dispatcher faces every morning: I have 60 stops to make, 5 vans, each customer wants a specific delivery window, what's the best route plan?
 
-![3-algorithm comparison — Tbilisi CVRP-TW](assets/routes_static.png)
+This is the Capacitated Vehicle Routing Problem with Time Windows. NP-hard in the worst case but very solvable in the regime that matters in practice (a few dozen stops, a handful of vehicles).
 
----
+![Three algorithms side-by-side](assets/routes_static.png)
 
-## TL;DR
+## Three solvers, one problem
 
-A genuinely-hard last-mile dispatch problem solved three ways:
+I ran the same instance through three approaches:
 
 | Solver | Total time | Max single route | Per-route stops |
 |---|---:|---:|---|
-| **Greedy nearest-neighbour** | 346.7 min | 87.5 min | 13/12/11/12/12 |
-| **Clarke-Wright savings (1964)** | **275.4 min** | 77.0 min | 16/13/11/10/10 |
-| **OR-Tools (Guided Local Search)** | 276.3 min | **75.0 min** | 8/14/13/12/13 |
+| Greedy nearest-neighbour | 346.7 min | 87.5 min | 13 / 12 / 11 / 12 / 12 |
+| **Clarke-Wright savings (1964)** | **275.4 min** | 77.0 min | 16 / 13 / 11 / 10 / 10 |
+| **OR-Tools (Guided Local Search)** | 276.3 min | **75.0 min** | 8 / 14 / 13 / 12 / 13 |
 
-- **OR-Tools beats greedy by 20.3 %** on total cost.
-- **Clarke-Wright (1964)** ties OR-Tools within 0.3 %. The classical heuristic still has it.
-- OR-Tools wins on **max-route balance** — 75 vs 77 vs 87.5 min for the longest driver.
+The interesting result: a heuristic from **1964** essentially ties Google's modern OR-Tools solver on total cost. They're within 0.3% of each other. OR-Tools wins on max-route balance — its worst-case driver works 75 min, vs Savings' 77 min and Greedy's 87.5 min. That 12-minute reduction in the longest driver's day is the real operational signal.
 
-### Sensitivity — how cost scales with fleet size
+Both Savings and OR-Tools crush greedy by ~20%.
 
-![Sensitivity sweep](assets/sensitivity_chart.png)
+## How costs scale with fleet size
 
-- Greedy *gets worse* as you add more vehicles (more drivers each take greedy detours).
-- Savings & OR-Tools plateau at ~276 min from 5 vehicles upwards.
-- 4 vehicles is infeasible — demand 91 > capacity 80, plus time-window conflicts.
+![Sensitivity curve](assets/sensitivity_chart.png)
 
-![Per-algorithm comparison chart](assets/comparison_chart.png)
+I swept vehicle count from 3 to 8 and re-ran all three algorithms. Three things stand out:
 
----
+- **Greedy gets *worse* as you add more vehicles.** Each driver picks their own nearest unvisited stop, so more drivers means more crisscross.
+- **Savings and OR-Tools plateau** at ~276 min from 5 vehicles upward. Adding vehicle 6, 7, 8 doesn't help — you're just paying for idle capacity.
+- **4 vehicles is infeasible.** Total parcel demand (91) exceeds 4-vehicle capacity (80), and the time-window constraints make it worse. So the answer to "how many vans do I need" is *exactly 5*.
 
-## Approach
+![Per-algorithm comparison](assets/comparison_chart.png)
 
-```
-OSMnx drive network (3 km radius)
-    ↓ truncate to largest STRONGLY-connected component
-60 OSM-POI destinations + time window + parcel demand
-    ↓ snap to network
-NetworkX all-pairs SPL → 61×61 time matrix
-    ↓
-     ────────────┬─────────────────────┬───────────────────
-Greedy NN              Clarke-Wright savings           OR-Tools CVRPTW + GLS
-                                                          Time + Capacity dimensions
-                                                          6 h slack, 10 s budget
-```
+## The bug that wasted me a couple hours
 
-Critical bug fix during development: when the cost matrix has even ONE "unreachable" entry (10M-second fallback), totals balloon to 167,000 minutes. Fixed by `ox.truncate.largest_component(G, strongly=True)`.
+The first time I ran this, the greedy and savings algorithms reported a total time of 167,000 minutes (~278 hours, for 60 deliveries). OR-Tools just said "infeasible."
 
----
+The cause: OSMnx's `graph_from_point` can return a graph with multiple disconnected components when the radius is large enough. One stop snapped to a node sitting in an isolated subgraph, which produced a `nx.shortest_path_length` error caught by my try/except and converted into `10_000_000` seconds. One poisoned cell in the cost matrix → every algorithm that touched it inherited the 10M-second penalty. Hence the absurd total.
 
-## Stack
+The fix is one line: `G = ox.truncate.largest_component(G, strongly=True)` before snapping. After that, every node can reach every other node, and the cost matrix is clean. I'm mentioning this because it's the exact pitfall that trips up most OSMnx VRP tutorials online — they almost all skip the LCC truncation.
 
-OSMnx 2.1 · NetworkX 3.6 · OR-Tools 9.x · GeoPandas 1.1 · Folium 0.20
+## Constraints I actually applied
 
-Single script: [`scripts/route.py`](scripts/route.py) (~400 lines).
+- **Capacity**: each vehicle holds 20 parcels max. Demand per stop is 1, 2, or 4 (weighted random).
+- **Time windows**: each customer gets a 90-minute window (morning 08:00–09:30, midday 11:00–12:30, or afternoon 15:00–16:30). OR-Tools enforces these as hard constraints.
+- **Service time**: 3 minutes at every stop, modelled as an additive transit cost out of each node.
+- **Single depot**: Freedom Square in central Tbilisi. All routes start and end there.
+- **Slack**: 6 hours of slack on the Time dimension in OR-Tools, so a van that finishes morning at 09:45 can legally wait until 11:00 to start midday deliveries.
 
----
+## Why Clarke-Wright is still competitive in 2026
 
-## What I'd build next
+For every pair of customers (i, j), the savings `s(i,j) = c(0,i) + c(0,j) - c(i,j)` quantifies how much you save by serving them on one route instead of two separate out-and-back trips from the depot. Sort all pairs descending by savings, then greedily merge feasible routes.
 
-1. Asymmetric (directed) time matrix — ~3–5 % improvement with one-way streets.
-2. Traffic-aware edge weights from historical GPS traces.
-3. Online re-optimisation when stops are delayed.
-4. Multi-depot, heterogeneous fleet (already supported by OR-Tools — just config).
-5. Multi-objective (total time + max route + fuel + overtime).
+That's it. No metaheuristic, no escape from local optima, just a sort and a merge loop. It runs in milliseconds. And it captures the structure of medium-sized VRPs so well that a modern GLS metaheuristic only beats it by basis-point margins.
+
+OR-Tools' real edge comes at scale (thousands of stops) and when you stack on harder constraints (heterogeneous fleet, multi-depot, traffic-aware edge weights, soft time-window penalties). For a 60-stop instance with the constraints I had, Clarke-Wright is essentially as good and runs faster.
+
+## The interactive map
+
+The [dashboard for this project](https://ishunteam-png.github.io/gis-portfolio/03-route-optimization/) lets you toggle between the three algorithms, hover a route to see its stats, click any stop for time window and demand.
+
+## What I'd do next
+
+Directed (asymmetric) cost matrix. Right now I'm treating each edge as bidirectional. With one-way streets that's an approximation; using true directed shortest paths typically tightens the solution by 3–5 %.
+
+Traffic-aware edge weights. OSM `maxspeed` is free-flow speed. For peak-hour dispatch, you'd want time-of-day traffic profiles, ideally trained from your own historical GPS traces.
+
+Re-optimisation mid-shift. If a stop is late or a new high-priority delivery comes in, the dispatcher needs to re-plan routes from each driver's current position. OR-Tools supports incremental re-solve; that's a small state model plus a webhook.

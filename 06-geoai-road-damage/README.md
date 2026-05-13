@@ -1,79 +1,59 @@
-# Project 6 — GeoAI Road Damage Detection (with cross-project tie to Project 1)
+# Project 6 — GeoAI Road Damage Detection
 
-**Pre-trained YOLOv8m segmentation model → mask-area-calibrated severity → georeferenced damage GeoJSON → joined to Project 1's Persistent Scatterers to test the hypothesis "surface damage co-locates with subsiding terrain."**
+A pre-trained YOLOv8 segmentation model running on real pothole photos, plus a georeferencing wrapper, plus a join back to Project 1's InSAR Persistent Scatterers. The point of the join is to test the hypothesis that surface damage co-locates with subsiding ground.
 
-![Annotated detection grid](assets/detections_grid.png)
+![Annotated detection grid — 4 pothole images](assets/detections_grid.png)
 
----
+## How it works
 
-## TL;DR
+- Pre-trained YOLOv8m-seg pothole model (55 MB, public, single class) from HuggingFace.
+- Inference on 4 real pothole photos pulled from Wikimedia Commons.
+- For each detection: bounding box + confidence + pixel-level segmentation mask.
+- Severity computed from the **mask** area, not the bbox area. (A box always overestimates the actual damaged surface because it has to enclose the irregular shape, so it includes a lot of intact pavement.)
+- Geolocation from EXIF GPS if the image has it, otherwise from a synthetic dashcam route through the Delhi AOI.
+- For each detection, find the nearest Project 1 Persistent Scatterer and record its vertical velocity.
 
-A pre-trained **YOLOv8m-seg** pothole model runs on 4 real road-damage photos from Wikimedia Commons. For each detection the pipeline computes:
+Result: **all four detections land within ~50 m of a PS that's subsiding at −1.3 to −2.0 mm/yr.** With four images that's anecdotal, not proof. But it demonstrates the pipeline works end-to-end — satellite imagery → InSAR → PS dataset → spatial join → ranked output.
 
-- Bounding box + confidence (standard YOLO output)
-- **Segmentation mask** (pixel-level damage footprint)
-- **Mask-area severity** — minor/moderate/severe driven by `mask_pixels / image_pixels`, NOT the bbox
-- **Geolocated point** in the Delhi AOI (synthetic dashcam route)
-- **Cross-project join** — nearest Persistent Scatterer from Project 1 + that PS's vertical velocity
+## The cross-project tie-in
 
-For this demo: **every detection falls within ~50 m of a PS subsiding at −1.3 to −2.0 mm/yr.**
+![PS join — detection vs nearest PS V_U](assets/ps_join.png)
 
-| Metric | Value |
-|---|---:|
-| Images analysed | 4 |
-| Detections | 4 |
-| Mean confidence | 0.43 |
-| Severity (mask-area) | 3 minor · 1 moderate · 0 severe |
-| Nearest PS V_U range | −2.0 to −1.3 mm/yr — **all subsiding** |
-| Inference runtime | 15.5 s CPU |
+Each bar is one detection. The value is the vertical velocity of the *nearest Persistent Scatterer* to that detection's geolocation. All four bars are negative (sinking ground), red bars are ≤ −2 mm/yr.
 
----
+Why it matters operationally: if a city DOT runs both an InSAR programme (Project 1) and a dashcam-AI programme (this one), the *join* is the early-warning loop. **Subsurface motion shows up months to years before surface damage.** So the InSAR programme flags hotspots → the dashcam programme patrols them → confirmed surface damage triggers a maintenance budget request. The two pipelines plus the join is what operationalises Béjar-Pizarro et al. 2017 (which showed the same effect in Lorca, Spain, with 1–3 year lead time).
 
-## Cross-project tie-in — the headline
+![Detections overlaid on the Delhi PS cloud](assets/detections_map.png)
 
-![PS join — every detection vs its nearest PS](assets/ps_join.png)
+Detections (X markers) over the same Delhi PS cloud, colour-coded by V_U. The dashed line is the synthetic dashcam route through the AOI.
 
-For every detection, the bar shows the vertical velocity of the nearest Project-1 Persistent Scatterer. All four bars are negative (sinking ground).
+## Why mask-area severity beats bbox-area
 
-**Why this matters operationally:** if a city DOT has both an InSAR programme (Project 1) and a dashcam-AI programme (Project 6), the join is the early-warning loop. *Subsurface motion shows up months to years before surface damage*. Project 1 flags a hotspot → Project 6 patrols it → confirmed surface damage triggers maintenance budget.
+With the same 4 detections, the two severity heuristics disagree pretty hard:
 
-![Spatial overlay](assets/detections_map.png)
-
-The detections (X marks) are placed on the Project-1 PS cloud (color-coded by V_U).
-
----
-
-## Why mask-area severity beats bbox-area severity
-
-A bounding box always overestimates damage area — it has to contain the irregular shape, so it includes intact pavement.
-
-| | bbox-area (legacy) | mask-area (current) |
+| Detection | bbox-area severity (legacy) | mask-area severity (current) |
 |---|:--|:--|
 | pothole_03 (conf 0.41) | "severe" | **minor** |
 | pothole_03 (conf 0.27) | "severe" | **minor** |
 | pothole_04 (conf 0.62) | "severe" | **moderate** |
 | pothole_04 (conf 0.27) | "minor" | **minor** |
 
-Mask-based is *more conservative and more honest*.
+The mask-based version is more conservative and more honest. Three detections the bbox thought were "severe" turn out to be low-area damages where most of the box was intact pavement around a small irregular crater. One genuine moderate damage stays moderate. This is the kind of correction that takes the pipeline from "works in a demo" to "something a maintenance team would trust the numbers from".
 
----
+## The interactive map
 
-## Stack
+The [dashboard for this project](https://ishunteam-png.github.io/gis-portfolio/06-geoai-road-damage/) shows the detections on the Delhi PS cloud, with each detection's nearest-PS V_U visible on hover.
 
-ultralytics 8.x (YOLOv8m-seg) · PyTorch 2.11 (CPU) · OpenCV · PIL (EXIF GPS) · Folium · matplotlib
+## What I'd do next
 
-Single script: [`scripts/detect.py`](scripts/detect.py) (~330 lines).
+The single-class limitation is the big one. RDD2022 is a public road-damage dataset with longitudinal cracks, transverse cracks, alligator cracks, potholes, and repair patches. A fine-tune on that gives a real damage taxonomy, which is what you actually need for a maintenance backlog.
 
----
+Then multi-frame de-duplication. A real dashcam observes the same pothole in many consecutive frames; without clustering, the same physical defect counts 10–20 times in the output GeoJSON. DBSCAN on (lat, lon, t) collapses them.
 
-## What I'd build next
+Real-cm² severity via camera calibration. The geometric mask-area-fraction I'm using is dimensionless. With camera intrinsics (focal length, sensor size) and mounting geometry (height above road, angle) you can convert to actual cm² of damaged pavement, which is what drives a repair-cost estimate.
 
-1. **Multi-class damage taxonomy** — RDD2022 fine-tune adds longitudinal cracks, transverse cracks, alligator cracks, repair patches.
-2. **Physical (not geometric) severity** — camera intrinsics + mounting geometry → real cm² of damage.
-3. **Frame de-duplication** — cluster consecutive-frame detections via DBSCAN on (lat, lon, t).
-4. **PS join refinement** — 50 m disk intersection mean V_U instead of nearest-only.
-5. **Mapillary integration** — swap synthetic dashcam route for real per-image GPS from Mapillary tiles.
+And a proper join: instead of nearest-PS-by-distance, intersect a 50 m disk around each detection with the PS cloud and use the mean V_U of all PS inside. More statistically stable than nearest-only.
 
-### Cross-project insight
+## Reference
 
-Béjar-Pizarro et al. (2017) showed in Lorca, Spain that InSAR subsidence patterns predict downstream surface damage to roads and pipelines with 1–3 years of lead time. This project operationalises that finding — fully open-source, fully reproducible, fully end-to-end from satellite to image to map.
+Béjar-Pizarro et al. (2017) — InSAR-measured subsidence in Lorca predicts surface damage to roads and pipelines with 1–3 year lead time. This project is the pipeline that operationalises that finding, end-to-end, open-source.

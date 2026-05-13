@@ -1,71 +1,78 @@
-# Project 2 — Real Estate Location Intelligence (Tbilisi)
+# Project 2 — Café Location Intelligence (Tbilisi)
 
-**Score every 250 m cell in a city on "good place to open a new café" using FIVE open-data signals — including walkability derived from the OSM pedestrian graph — then validate the model against the existing distribution of cafés. Generalises to any OSM-mapped city via `--city`.**
+If you were going to open a new café in Tbilisi, where would you put it?
 
-![Tbilisi café suitability — hero](assets/tbilisi_georgia/suitability_hero.png)
+This project tries to give an actual answer: every 250 m cell in the city scored on five open-data signals, then validated against where cafés already exist.
 
----
+![Tbilisi suitability map with top-20 cells outlined](assets/tbilisi_georgia/suitability_hero.png)
 
-## TL;DR
+## The five signals
 
-For Tbilisi: **8,415 cells scored over 504 km²**, top-20 ranked, and the model **passes a Spearman ρ = 0.39 validation** against the actual distribution of 869 existing cafés.
+All from OpenStreetMap and the OSM walk graph. Each is computed in a small radius around the cell centre and normalised.
 
-The five signals:
+| Signal | Direction | Radius | Weight |
+|---|---|---:|---:|
+| Foot traffic (shops + transit stops nearby) | + | 300 m | 0.30 |
+| Residential density (homes nearby) | + | 300 m | 0.20 |
+| Tourist amenities (attractions, hotels, museums) | + | 500 m | 0.15 |
+| Walkability (street-intersection density, deg ≥ 3) | + | 400 m | 0.20 |
+| Competition (existing cafés nearby) | − | 200 m | 0.15 |
 
-| Signal | Direction | Radius | Weight | Source |
-|---|---|---:|---:|---|
-| **Foot traffic** — shops + transit | + | 300 m | 0.30 | OSM POI |
-| **Residential density** — homes within radius | + | 300 m | 0.20 | OSM building tag |
-| **Tourist proximity** — attractions / hotels / museums | + | 500 m | 0.15 | OSM tourism tag |
-| **Walkability** — pedestrian intersection density (deg ≥ 3) | + | 400 m | 0.20 | OSM walk graph |
-| **Competition** — existing cafés | − | 200 m | 0.15 | OSM amenity=cafe |
+Min-max normalise each, weighted sum, normalise the result. Top-20 highest-scoring cells get surfaced.
 
-### Top 5 candidate cells
+## The top five cells
 
-| Rank | Lon | Lat | Score | Foot | Res | Tour | **Walk** | Comp |
+| Rank | Lon | Lat | Score | Foot | Res | Tour | Walk | Competition |
 |---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 1 | 44.8020 | 41.6931 | **1.000** | 241 | 169 | 106 | **397** | 16 |
-| 2 | 44.8020 | 41.6953 | 0.969 | 230 | 129 | 95 | **455** | 13 |
-| 3 | 44.8050 | 41.6908 | 0.926 | 131 | 258 | 129 | **421** | 13 |
-| 4 | 44.7869 | 41.7043 | 0.855 | 148 | 244 | 58 | **456** | 8 |
-| 5 | 44.8050 | 41.6931 | 0.839 | 130 | 240 | 114 | **436** | 21 |
+| 1 | 44.802 | 41.693 | **1.000** | 241 | 169 | 106 | **397** | 16 |
+| 2 | 44.802 | 41.695 | 0.969 | 230 | 129 | 95 | **455** | 13 |
+| 3 | 44.805 | 41.691 | 0.926 | 131 | 258 | 129 | **421** | 13 |
+| 4 | 44.787 | 41.704 | 0.855 | 148 | 244 | 58 | **456** | 8 |
+| 5 | 44.805 | 41.693 | 0.839 | 130 | 240 | 114 | **436** | 21 |
 
-The top 4 cluster around **Mtatsminda / Old Tbilisi**. Rank 4 surfaces a Vake/Saburtalo cell with **lower foot traffic but very high walkability** — the walkability signal is doing real work.
+The top 4 all cluster around **Mtatsminda / Old Tbilisi** — which matches reality, that's where the successful cafés actually are. Rank 4 is the one I find most interesting: it surfaces a Vake/Saburtalo cell with merely OK foot traffic but extremely high walkability. Pure POI-density wouldn't have picked it; the walkability signal is doing real work.
 
-### Validation
+## Does the model agree with reality
 
 ![Validation scatter](assets/tbilisi_georgia/validation.png)
 
-**Spearman ρ = 0.39** (p ≈ 0). A significant positive correlation: cells the model rates highly really do already have more cafés than cells it rates lowly. The 0.4 range is right for a model that's both *aligned with reality* and *predictive beyond the obvious*.
+For every cell, plot the model's suitability score against the number of cafés actually observed in that cell. Spearman ρ = **0.39** (p ≈ 0). That's a significant positive correlation: cells the model rates highly really do already have more cafés than cells it rates lowly.
 
----
+The correlation isn't 1.0, and that's the point. If it were 1.0 the model would just be re-discovering competition density and wouldn't tell you anything new. ~0.4 is the right zone for a model that's both calibrated to reality *and* able to recommend underserved spots.
 
-## Generalises to any OSM-mapped city
+## Diagnostics — all five components
+
+![Score components](assets/tbilisi_georgia/score_components.png)
+
+Every signal across the city before normalisation. This is the "show your working" panel. The signals are visibly independent of each other: foot traffic peaks in different cells than walkability, which peaks in different cells than residential density. So the composite isn't just a recolouring of one dominant signal.
+
+## Walkability standalone
+
+![Walkability panel](assets/tbilisi_georgia/walkability_panel.png)
+
+Intersection density (graph nodes with degree ≥ 3) within 400 m, computed from the OSM walk graph. The bright orange ridge runs through Mtatsminda → Vake → Saburtalo, which is also where the top-5 cells cluster. The walk graph has 62,849 such nodes for Tbilisi.
+
+## Run it on any city
+
+The script accepts `--city`:
 
 ```bash
-py scripts/analyze.py --city "Tbilisi, Georgia"        # default
-py scripts/analyze.py --city "Yerevan, Armenia"        # any place
+py scripts/analyze.py --city "Tbilisi, Georgia"
+py scripts/analyze.py --city "Yerevan, Armenia"
 py scripts/analyze.py --city "Sofia, Bulgaria" --validate
-py scripts/analyze.py --compare                         # 3-city run
+py scripts/analyze.py --compare
 ```
 
-Auto UTM zone, auto boundary, auto OSM queries.
+UTM zone, boundary, and all OSM queries auto-adapt to wherever you point it.
 
----
+## The interactive map
 
-## Stack
+The [dashboard for this project](https://ishunteam-png.github.io/gis-portfolio/02-real-estate-intel/) lets you pan the city, hover any cell for its score breakdown, and filter the visible cells by a minimum threshold.
 
-OSMnx 2.1 · GeoPandas 1.1 · NetworkX 3.6 (walk graph) · scipy.stats (Spearman) · Folium 0.20 · matplotlib
+## What I'd do next
 
-Single script: [`scripts/analyze.py`](scripts/analyze.py) (~330 lines).
+The weights are hand-picked, which is defensible but not satisfying. If I had ground-truth (revenue numbers, Yelp ratings, closure rates) I'd fit weights against an outcome label rather than guessing them.
 
----
+Also, the OSM foot-traffic proxy is exactly that — a proxy. Real foot-traffic data from Mapbox Movement, SafeGraph, or anonymised mobile-location data would replace it with measured counts, which would change which cells rank highest in non-trivial ways.
 
-## Limitations and what I'd build next
-
-1. **OSM POI coverage is uneven** — add a coverage prior down-weighting cells with low OSM edit density.
-2. **No temporal foot traffic** — Mapbox Movement / SafeGraph data would replace the proxy with measured pedestrian counts.
-3. **Weights are hand-picked** — with ground-truth (revenue, ratings) I'd fit weights against an outcome label.
-4. **No accessibility / catchment** — walkability is currently intersection density; a 5-minute walk catchment via Dijkstra would be a 50-line addition.
-5. **PostGIS layer** — for multi-city tenant version, persist all OSM pulls + scoring runs in PostGIS.
-6. **Streamlit / Folium-deck** — drop GeoJSON into a Streamlit app with weights as sliders.
+The walkability term right now is just intersection density. A real accessibility score would compute the 5-minute-walk catchment via Dijkstra on the pedestrian graph and use the catchment population/POI counts.

@@ -1,49 +1,43 @@
-# Project 4 — Jakarta Compound Flood Risk (Multi-Factor)
+# Project 4 — Jakarta Compound Flood Risk
 
-**Build a per-pixel flood-risk index for the world's most flood-prone megacity by combining FOUR independent terrain-and-land-use signals from open data, then quantify the exposure of every hospital, school, fire station and police station in the AOI.**
+Jakarta is the worst place on Earth to ignore flood risk. 40% of the city sits below sea level. The northern wards subside at 10–25 cm per year, which is honestly hard to believe until you see it on InSAR. Thirteen rivers cross the city before discharging into the Java Sea. Monsoon rainfall and tidal pulses interact to produce compound floods that simple fluvial-only models miss. The Indonesian government's response to all of this is to *move the capital* — the new city Nusantara is being built ~1,300 km away in Borneo specifically because Jakarta isn't salvageable.
 
-![Jakarta — composite flood-risk model (4 panels: risk band, HAND, imperviousness, drainage density)](assets/flood_hero.png)
+If a flood model works in Jakarta, it works anywhere.
 
----
+![Jakarta flood-risk model, 4 panels](assets/flood_hero.png)
 
-## Why Jakarta
+## The model
 
-Jakarta is the canonical case study in urban flood hazard:
+For every pixel in a 23 km × 26 km bbox covering central Jakarta, I compute a composite 0–1 risk index from four signals derived purely from terrain and OSM land-use:
 
-- **40 %** of the city sits below sea level
-- North Jakarta subsides at **10–25 cm/yr** (one of the fastest rates in the world)
-- **13 rivers** cross the city before discharging into the Java Sea
-- Monsoon rainfall and tidal pulses interact to produce **compound floods** that simple fluvial-only models can't capture
-- The situation is so severe that **Indonesia is relocating its capital** from Jakarta to a new city (Nusantara) on Borneo, ~1,300 km away
+| Signal | What it captures | Direction | Weight |
+|---|---|---|---:|
+| **HAND** (Height Above Nearest Drainage) | Fluvial baseline — how far you sit above the nearest river/canal | Lower → wetter | 0.40 |
+| **Slope** (degrees, from DEM gradient) | Ponding accelerator — flat ground holds water | Lower → wetter | 0.25 |
+| **Imperviousness** (sealed-surface LU within 500 m) | Runoff accelerator — asphalt doesn't absorb | Higher → wetter | 0.20 |
+| **Drainage density** (waterway m/km² within 500 m) | Evacuation capacity — sparse drains → longer ponding | Lower → wetter | 0.15 |
 
-If your flood model works in Jakarta, it works anywhere.
+Min-max normalise each (with the right direction), weighted sum, quantile-band the result into 4 risk classes (low / moderate / high / very-high).
 
----
+DEM comes from the Mapzen open elevation tiles. OSM provides the waterways, the impervious and pervious land-use polygons, and the critical infrastructure. Everything is free.
 
-## TL;DR
+## Why a 4-signal model, not just HAND
 
-For a 23 km × 26 km bbox covering central Jakarta, the model produces a composite 0–1 flood-risk index for **1.7 million pixels** at ~20 m resolution, then bands each pixel into low / moderate / high / very high. The four input signals:
+A pure-HAND model gives you the fluvial baseline — how far above the nearest channel you sit. That's the dominant signal in deep-valley cities like Tbilisi, where the Mtkvari runs through a defined gorge. In a flat coastal delta like Jakarta, HAND alone misses too much:
 
-| Signal | Direction | Weight |
-|---|---|---:|
-| **HAND** (Height Above Nearest Drainage) | low value = high risk | 0.40 |
-| **Slope** (degrees, from DEM gradient) | low value = high risk | 0.25 |
-| **Imperviousness** (impervious LU / total LU within 500 m) | high value = high risk | 0.20 |
-| **Drainage density** (m of waterway per km², 500 m disk) | high value = LOW risk | 0.15 |
+- A flat parking lot accumulates standing water *regardless* of its distance to a river. Slope captures that.
+- Jakarta's mid-city neighbourhoods are 80–95% sealed surface; 100 mm of rain becomes ≈90 mm of runoff there, vs ≈30 mm in a permeable suburb. Imperviousness captures that.
+- Kampung-style neighbourhoods with sparse storm drains pond for *days* longer than planned grids with regular drainage cross-sections, even at the same HAND value. Drainage density captures that.
 
-### Headline numbers
+Combining all four captures the compound mechanism: river overflow + intense convective rainfall + sealed surfaces + clogged drains. That's why the high-risk band in panel 1 of the hero map lines up not just with rivers but also with dense kampung neighbourhoods.
 
-- **DEM:** Mapzen Terrain Tiles, zoom 12, ~20 m resolution, elevation **−55 to +92 m** (yes — negative; coastal North Jakarta is below sea level)
-- **Waterways:** 1,078 OSM features
-- **Land use:** 1,603 impervious + 5,517 pervious LU polygons
-- **Critical infrastructure analysed:** **7,371 assets**
-- **Wall-clock pipeline:** ~10 min end-to-end
+## What this gives you
 
-### Critical-infrastructure exposure to high + very-high risk
+The headline number for an emergency-management agency:
 
-![Critical infrastructure exposure chart](assets/critical_infra_chart.png)
+![Critical infrastructure exposure by asset type](assets/critical_infra_chart.png)
 
-| Asset type | High + Very High count |
+| Asset type | In high + very-high band |
 |---|---:|
 | Schools | **1,360** |
 | Kindergartens | **725** |
@@ -54,36 +48,34 @@ For a 23 km × 26 km bbox covering central Jakarta, the model produces a composi
 | Fire stations | **45** |
 | Ambulance stations | **22** |
 
-**This is the headline a city emergency-management agency actually wants.**
+That's a screening map for triaging *which buildings to harden first*. Not a flood-depth simulation — those need a proper 2D hydraulic solver — but a defensible first-pass ranking of where the hazard concentrates.
 
----
+## Component diagnostics
 
-## Why a 4-signal model instead of just HAND
+![All four normalised inputs](assets/risk_components.png)
 
-A pure-HAND model gives the *fluvial baseline*. In a flat coastal delta city like Jakarta you also need:
+Each of the four contributions, normalised, side-by-side. Useful for auditing the weighting — if one signal swamped the composite I'd see it here.
 
-- **Slope** for *ponding* — flat parking lots accumulate water independent of distance to river
-- **Imperviousness** for *runoff generation* — sealed surfaces convert 90 % of rain to runoff
-- **Drainage density** for *evacuation capacity* — sparse-drain kampungs pond longer than planned grids
+## What I learned the hard way
 
-This captures the compound nature of Jakarta floods that a single-signal model misses.
+A few things broke that are worth documenting:
 
----
+1. **Jakarta has too many OSM buildings to pull in one Overpass query.** I made the request, it ran for 30 minutes, then returned 0 features without an error. I caught this when the building exposure chart showed all-zero columns. The fix is to chunk the bbox into a 2×3 grid and pull each chunk separately; that's what `scripts/patch_buildings.py` does. Even better: skip OSM and use the Microsoft Building Footprints open dataset (28M buildings for Indonesia).
 
-## Stack
+2. **The Euclidean-nearest HAND I'm computing is not the proper HAND.** Real HAND follows the *flow path* to the drainage. A pixel on the wrong side of a ridge gets matched to a stream on its side of the ridge by Euclidean distance, even though hydrologically it drains the other way. The result is some negative HAND values where pixels are below the elevation of the "nearest" drainage — a topological artefact. I drop the negatives before building flood masks, which is a workaround, not a fix. The real fix is a D8 flow-routing step from WhiteboxTools.
 
-rasterio 1.5 · scipy.ndimage (distance_transform_edt + convolve) · GeoPandas · OSMnx · Folium
+3. **The CRS situation around Mapzen tiles is fiddly.** Tiles come in EPSG:3857. OSM is in EPSG:4326. The Folium overlay needs the risk-band raster reprojected to 4326. `rasterio.warp.calculate_default_transform` does this but the math for the corner bounds is unintuitive. A few attempts produced overlays that were geographically offset by ~500 m before I worked out the right inversion.
 
-Single script: [`scripts/flood.py`](scripts/flood.py) (~360 lines).
+## The interactive map
 
----
+The [dashboard for this project](https://ishunteam-png.github.io/gis-portfolio/04-flood-risk/) lets you toggle the risk-band overlay, filter critical-infra markers by risk band, and click any school/hospital to see its exposure.
 
-## Limitations and what I'd build next
+## What I'd do next
 
-1. Buildings footprint pull is incomplete — use Microsoft Building Footprints (28 M Indonesia buildings) instead of OSM.
-2. HAND uses Euclidean nearest — D8 flow routing would fix negative-HAND artefacts.
-3. No tidal / coastal flooding — add storm-surge layer (GTSM model output).
-4. No subsidence layer — add Sentinel-1 PSI a la Project 1 for Jakarta and re-baseline annually.
-5. No rainfall scenarios — couple with SCS-CN runoff and ESA WorldCover land cover.
-6. Population, not just buildings — join WorldPop / HRSL for "X people exposed in band Y".
-7. Validation against Jakarta's 2007/2013/2020 flood extent maps — Critical Success Index.
+- **Proper HAND** via D8 flow routing. WhiteboxTools' chain is `BreachDepressions → D8Pointer → D8FlowAccumulation → ElevationAboveStream`. Drop-in replacement for my Euclidean proxy.
+- **Coastal storm-surge layer**, because Jakarta's compound floods include sea-level pulses propagating up the rivers. The GTSM global tide-and-surge model has output that could be combined with the fluvial HAND.
+- **Subsidence baseline.** North Jakarta sinks 25 cm/yr. That moves the flood baseline by 1.25 m every five years. Adding a Project-1-style InSAR layer for Jakarta would let the risk map be re-baselined annually.
+- **Population, not just buildings.** Joining with WorldPop or HRSL gives "X residents in band Y", which is the number that actually drives policy.
+- **Historical-event validation.** Jakarta's 2007, 2013, 2020 floods have public extent maps. Overlaying them against my high+very-high band would give a hit-rate / Critical Success Index, which is the real test of any flood model.
+
+This is a *screening* map. Items 1, 2, 4, 5 above are what would turn it into a *planning* map.
