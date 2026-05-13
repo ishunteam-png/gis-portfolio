@@ -230,8 +230,6 @@ aside h2:first-of-type { margin-top: 0; }
         <select id="color-mode">
             <option value="v_vertical_mm_yr">Vertical velocity V_U</option>
             <option value="v_eastwest_local_mm_yr">East-west velocity V_E (local)</option>
-            <option value="v_los_asc_mm_yr">LOS velocity (ascending)</option>
-            <option value="v_los_dsc_mm_yr">LOS velocity (descending)</option>
         </select>
         <div class="help">red = subsidence / west · blue = uplift / east</div>
     </div>
@@ -295,11 +293,12 @@ aside h2:first-of-type { margin-top: 0; }
     <button class="copy-link" id="copy-link">Copy shareable URL ↗</button>
 
     <div class="foot">
-        Data: SATALITE Delhi pilot · 2,656 PS · 3-year window 2023-05 → 2026-04 ·
-        ASC path 27 + DSC path 136 · ERA5-corrected · ITRF14.<br><br>
+        Showing 320 Persistent Scatterers (stratified sample from the full 2,656-PS Delhi pilot
+        — top 60 most-subsiding + every 10th of the rest, covering the full AOI).<br><br>
+        3-year window 2023-05 → 2026-04 · ASC path 27 + DSC path 136 · ERA5-corrected · ITRF14.<br><br>
         Project repo: <a href="../01-insar-road-subsidence/">/01-insar-road-subsidence</a><br>
-        Filters are reflected in the URL hash, so the "Copy shareable URL" button
-        captures exactly what you're looking at.
+        Filters are reflected in the URL hash — the "Copy shareable URL" button captures the
+        exact view.
     </div>
 </aside>
 
@@ -312,7 +311,7 @@ aside h2:first-of-type { margin-top: 0; }
         <div id="map2"></div>
         <div class="label-tag" id="right-tag">V_E</div>
     </div>
-    <div id="loading">Loading 2,656 Persistent Scatterers…</div>
+    <div id="loading">Loading Persistent Scatterers…</div>
 </div>
 
 <script>
@@ -425,8 +424,6 @@ function popupHtml(p) {
         <table>
         <tr><td>V<sub>U</sub></td><td class="${cls(p.v_vertical_mm_yr)}">${fmt(p.v_vertical_mm_yr)} mm/yr</td></tr>
         <tr><td>V<sub>E</sub> local</td><td class="${cls(p.v_eastwest_local_mm_yr)}">${fmt(p.v_eastwest_local_mm_yr)} mm/yr</td></tr>
-        <tr><td>LOS ASC</td><td>${fmt(p.v_los_asc_mm_yr)} mm/yr</td></tr>
-        <tr><td>LOS DSC</td><td>${fmt(p.v_los_dsc_mm_yr)} mm/yr</td></tr>
         <tr><td>tcoh ASC / DSC</td><td>${fmt(p.tcoh_asc, 3)} / ${fmt(p.tcoh_dsc, 3)}</td></tr>
         <tr><td>lat / lon</td><td>${p.lat.toFixed(5)} / ${p.lon.toFixed(5)}</td></tr>
         </table>
@@ -453,13 +450,13 @@ function rebuild() {
         visible.push(f);
         const v_left = p[prop];
         L.circleMarker([g[1], g[0]], {
-            radius: 3.4, color: colorFor(v_left), fillColor: colorFor(v_left),
+            radius: 4.2, color: colorFor(v_left), fillColor: colorFor(v_left),
             weight: 0.6, opacity: 0.9, fillOpacity: 0.92,
         }).bindPopup(popupHtml(p)).addTo(layerGroup);
         if (state.split) {
             const v_right = p.v_eastwest_local_mm_yr;
             L.circleMarker([g[1], g[0]], {
-                radius: 3.4, color: colorFor(v_right), fillColor: colorFor(v_right),
+                radius: 4.2, color: colorFor(v_right), fillColor: colorFor(v_right),
                 weight: 0.6, opacity: 0.9, fillOpacity: 0.92,
             }).addTo(layerGroup2);
         }
@@ -472,19 +469,18 @@ function rebuild() {
         for (const f of sorted) {
             const g = f.geometry.coordinates;
             L.circleMarker([g[1], g[0]], {
-                radius: 9, color: '#ffd43b', weight: 2.5, fill: false, opacity: 0.95,
+                radius: 10, color: '#ffd43b', weight: 2.5, fill: false, opacity: 0.95,
             }).addTo(highlightGroup);
             if (state.split) {
                 L.circleMarker([g[1], g[0]], {
-                    radius: 9, color: '#ffd43b', weight: 2.5, fill: false, opacity: 0.95,
+                    radius: 10, color: '#ffd43b', weight: 2.5, fill: false, opacity: 0.95,
                 }).addTo(highlightGroup2);
             }
         }
     }
 
     document.getElementById('left-tag').textContent =
-        ({v_vertical_mm_yr: 'V_U', v_eastwest_local_mm_yr: 'V_E',
-          v_los_asc_mm_yr: 'LOS ASC', v_los_dsc_mm_yr: 'LOS DSC'})[state.mode];
+        ({v_vertical_mm_yr: 'V_U', v_eastwest_local_mm_yr: 'V_E'})[state.mode];
 
     updateStats(visible);
     drawHistogram(visible);
@@ -607,7 +603,26 @@ applySplit();
 fetch('data/persistent_scatterers.geojson')
     .then(r => r.json())
     .then(g => {
-        allFeatures = g.features;
+        // Normalize: accept both legacy long names AND new short codes (vu/ve/ta/td).
+        // Required because the compact ~45 KB geojson stores props as {vu, ve, ta, td}
+        // but the rest of the dashboard code reads {v_vertical_mm_yr, ...} long names.
+        allFeatures = g.features.map(f => {
+            const sp = f.properties || {};
+            return {
+                type: 'Feature',
+                geometry: f.geometry,
+                properties: {
+                    lat: sp.lat ?? f.geometry.coordinates[1],
+                    lon: sp.lon ?? f.geometry.coordinates[0],
+                    v_vertical_mm_yr:       sp.vu ?? sp.v_vertical_mm_yr,
+                    v_eastwest_local_mm_yr: sp.ve ?? sp.v_eastwest_local_mm_yr,
+                    v_los_asc_mm_yr:        sp.la ?? sp.v_los_asc_mm_yr ?? NaN,
+                    v_los_dsc_mm_yr:        sp.ld ?? sp.v_los_dsc_mm_yr ?? NaN,
+                    tcoh_asc:               sp.ta ?? sp.tcoh_asc ?? 1.0,
+                    tcoh_dsc:               sp.td ?? sp.tcoh_dsc ?? 1.0,
+                }
+            };
+        });
         document.getElementById('loading').style.display = 'none';
         rebuild();
         const lats = allFeatures.map(f => f.geometry.coordinates[1]);
