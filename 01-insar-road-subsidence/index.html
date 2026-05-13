@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Delhi InSAR Road Subsidence — Persistent Scatterer Dashboard</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<style>
+:root {
+  --bg:#0f1419; --panel:#1a1f29; --panel-2:#232a36;
+  --line:#2d3441; --fg:#e7ecf3; --fg-dim:#98a2b3;
+  --accent:#4dabf7;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+     color:var(--fg);background:var(--bg);
+     display:grid;grid-template-rows:60px 1fr;grid-template-columns:340px 1fr}
+header{grid-column:1/3;background:var(--panel);border-bottom:1px solid var(--line);
+       display:flex;align-items:center;padding:0 20px;gap:16px}
+header h1{margin:0;font-size:16px;font-weight:600}
+header h1 .sub{color:var(--fg-dim);font-weight:400;margin-left:8px;font-size:13px}
+header .stats{margin-left:auto;display:flex;gap:10px}
+.stat{background:var(--panel-2);padding:5px 12px;border-radius:6px;border:1px solid var(--line);min-width:80px}
+.stat .lbl{color:var(--fg-dim);font-size:10px;text-transform:uppercase;letter-spacing:1px}
+.stat .val{color:var(--fg);font-size:15px;font-weight:600}
+aside{background:var(--panel);border-right:1px solid var(--line);padding:14px 16px;overflow-y:auto}
+aside h2{margin:16px 0 8px;font-size:11px;font-weight:600;color:var(--fg-dim);
+         text-transform:uppercase;letter-spacing:1.4px}
+aside h2:first-of-type{margin-top:0}
+.field{margin-bottom:11px}
+.field input[type="range"]{width:100%;background:var(--panel-2);accent-color:var(--accent)}
+.range-row{display:flex;align-items:center;gap:8px}
+.range-row .v{font-size:12px;width:50px;text-align:right}
+.toggle{display:flex;align-items:center;justify-content:space-between;background:var(--panel-2);
+        border:1px solid var(--line);border-radius:6px;padding:8px 11px;cursor:pointer;
+        font-size:13px;user-select:none}
+.toggle:hover{border-color:var(--accent)}
+.toggle.on{border-color:var(--accent);background:rgba(77,171,247,0.10)}
+.toggle .dot{width:10px;height:10px;border-radius:50%;background:var(--fg-dim)}
+.toggle.on .dot{background:var(--accent)}
+#map{width:100%;height:100%;background:#0a0e14}
+.leaflet-tile{filter:grayscale(0.15) brightness(0.85)}
+.legend{margin-top:8px;padding:10px;background:var(--panel-2);border-radius:6px;border:1px solid var(--line)}
+.legend-bar{height:14px;border-radius:3px;margin-bottom:4px}
+.legend-ticks{display:flex;justify-content:space-between;font-size:11px;color:var(--fg-dim)}
+.hist{margin-top:6px;height:84px;display:flex;align-items:flex-end;gap:1px;
+      background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:6px}
+.hist-bar{flex:1;background:var(--accent);border-radius:1px;min-height:1px;opacity:0.85}
+.leaflet-popup-content-wrapper{background:var(--panel);color:var(--fg);border:1px solid var(--line);
+   border-radius:7px;box-shadow:0 6px 24px rgba(0,0,0,0.4)}
+.leaflet-popup-tip{background:var(--panel);border:1px solid var(--line)}
+.leaflet-popup-content{font-family:inherit;font-size:12px}
+.leaflet-popup-content table{border-collapse:collapse}
+.leaflet-popup-content td{padding:2px 8px 2px 0}
+.leaflet-popup-content td:first-child{color:var(--fg-dim)}
+.foot{color:var(--fg-dim);font-size:11px;margin-top:18px;line-height:1.55;
+      border-top:1px solid var(--line);padding-top:12px}
+.foot strong{color:var(--fg)}
+.back{display:block;text-align:center;background:var(--panel-2);color:var(--accent);
+      text-decoration:none;padding:8px;border-radius:6px;font-size:12px;
+      border:1px solid var(--line);margin-bottom:14px}
+.back:hover{border-color:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Delhi InSAR Road Subsidence<span class="sub">Sentinel-1 ASC+DSC · MintPy · EGMS-L3 strict · 2D V_U + V_E · ITRF14 reference</span></h1>
+  <div class="stats">
+    <div class="stat"><div class="lbl">PS visible</div><div class="val" id="stat-count">—</div></div>
+    <div class="stat"><div class="lbl">Mean V_U</div><div class="val" id="stat-mean">—</div></div>
+    <div class="stat"><div class="lbl">Max sink</div><div class="val" id="stat-max">—</div></div>
+  </div>
+</header>
+<aside>
+  <a class="back" href="../">← back to portfolio</a>
+
+  <h2>Filter — show PS where |V_U| ≥</h2>
+  <div class="field">
+    <div class="range-row">
+      <input type="range" id="minabs" min="0" max="15" step="0.5" value="0"/>
+      <span class="v" id="minabs-v">0 mm/yr</span>
+    </div>
+  </div>
+
+  <h2>Filter — temporal coherence ≥</h2>
+  <div class="field">
+    <div class="range-row">
+      <input type="range" id="mincoh" min="0.70" max="0.99" step="0.01" value="0.70"/>
+      <span class="v" id="mincoh-v">0.70</span>
+    </div>
+  </div>
+
+  <h2>Layers</h2>
+  <div class="field">
+    <div id="subside-toggle" class="toggle on">
+      <span>Subsidence (V_U &lt; 0)</span><span class="dot"></span>
+    </div>
+  </div>
+  <div class="field">
+    <div id="uplift-toggle" class="toggle on">
+      <span>Uplift (V_U &gt; 0)</span><span class="dot"></span>
+    </div>
+  </div>
+
+  <h2>V_U histogram (mm/yr)</h2>
+  <div class="hist" id="hist"></div>
+  <div class="legend-ticks" style="margin-top:3px"><span>-15</span><span>0</span><span>+15</span></div>
+
+  <h2>Legend — V_U vertical velocity</h2>
+  <div class="legend">
+    <div class="legend-bar" id="legend-bar"></div>
+    <div class="legend-ticks">
+      <span>-15 mm/yr</span><span>0</span><span>+15 mm/yr</span>
+    </div>
+  </div>
+
+  <div class="foot">
+    Each point is a <strong>persistent scatterer</strong> — a hard reflector (roof, lamp post, road furniture)
+    that returns a stable signal across the Sentinel-1 stack. 2,656 PS total in the strict EGMS-L3 dataset;
+    320 shown here as a stratified sample (top-60 most extreme + every 10th of the rest).
+    <br><br>
+    V_U is the vertical component recovered by inverting ascending+descending LOS velocities — that's the
+    <strong>2D decomposition</strong>. Each PS has |V_U| with ±0.5 mm/yr precision and temporal coherence ≥ 0.70.
+    The 4 detections that match damage in Project 6 sit in the deepest red cluster east of the centre.
+  </div>
+</aside>
+<div id="map"></div>
+
+<script>
+let DATA = null;
+const state = {minAbs: 0, minCoh: 0.70, subside: true, uplift: true};
+
+function colorFor(vu){
+  // EGMS-style ramp: -15 (red) ... 0 (white) ... +15 (blue)
+  const t = Math.max(-1, Math.min(1, vu / 15));
+  if(t < 0){
+    const f = -t;  // 0 -> 1
+    const r = Math.round(255);
+    const g = Math.round(255 * (1-f));
+    const b = Math.round(255 * (1-f));
+    return `rgb(${r},${g},${b})`;
+  } else {
+    const f = t;
+    const r = Math.round(255 * (1-f));
+    const g = Math.round(255 * (1-f));
+    const b = Math.round(255);
+    return `rgb(${r},${g},${b})`;
+  }
+}
+function renderLegend(){
+  const stops=[];
+  for(let i=0;i<=20;i++){
+    const t=i/20;
+    const vu = -15 + 30*t;
+    stops.push(colorFor(vu)+' '+(t*100).toFixed(0)+'%');
+  }
+  document.getElementById('legend-bar').style.background =
+    'linear-gradient(to right, '+stops.join(', ')+')';
+}
+renderLegend();
+
+const map = L.map('map', {zoomControl:true, preferCanvas:true}).setView([28.61, 77.07], 12);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  {attribution:'&copy; OpenStreetMap &copy; CartoDB', subdomains:'abcd', maxZoom:19}).addTo(map);
+
+let psLayer = L.layerGroup().addTo(map);
+
+function popupHtml(p){
+  return `<table>
+    <tr><td>V_U (vertical)</td><td><strong>${p.vu.toFixed(2)} mm/yr</strong></td></tr>
+    <tr><td>V_E (east)</td><td>${p.ve.toFixed(2)} mm/yr</td></tr>
+    <tr><td>Coh (asc)</td><td>${p.ta.toFixed(3)}</td></tr>
+    <tr><td>Coh (dsc)</td><td>${p.td.toFixed(3)}</td></tr>
+    <tr><td>Direction</td><td>${p.vu < -3 ? 'sinking' : p.vu > 3 ? 'rising' : 'stable'}</td></tr>
+  </table>`;
+}
+
+function renderHistogram(features){
+  const bins = new Array(30).fill(0);
+  features.forEach(f => {
+    const vu = f.properties.vu;
+    let b = Math.floor(((vu + 15) / 30) * 30);
+    b = Math.max(0, Math.min(29, b));
+    bins[b]++;
+  });
+  const max = Math.max(...bins, 1);
+  const hist = document.getElementById('hist');
+  hist.innerHTML = '';
+  bins.forEach((b, i) => {
+    const bar = document.createElement('div');
+    bar.className = 'hist-bar';
+    bar.style.height = (b/max*100).toFixed(1) + '%';
+    const centerVu = -15 + (i + 0.5);
+    bar.style.background = colorFor(centerVu);
+    bar.title = `${(-15 + i).toFixed(0)}…${(-14 + i).toFixed(0)}: ${b}`;
+    hist.appendChild(bar);
+  });
+}
+
+function rebuild(){
+  if(!DATA) return;
+  psLayer.clearLayers();
+  document.getElementById('minabs-v').textContent = state.minAbs.toFixed(1) + ' mm/yr';
+  document.getElementById('mincoh-v').textContent = state.minCoh.toFixed(2);
+
+  const visible = DATA.features.filter(f => {
+    const p = f.properties;
+    if(Math.abs(p.vu) < state.minAbs) return false;
+    if(Math.min(p.ta, p.td) < state.minCoh) return false;
+    if(p.vu < 0 && !state.subside) return false;
+    if(p.vu > 0 && !state.uplift) return false;
+    return true;
+  });
+
+  visible.forEach(f => {
+    const c = f.geometry.coordinates;
+    const p = f.properties;
+    L.circleMarker([c[1], c[0]], {
+      radius: 3 + Math.min(8, Math.abs(p.vu)/2),
+      color: '#000', weight: 0.5,
+      fillColor: colorFor(p.vu), fillOpacity: 0.85
+    }).bindPopup(popupHtml(p)).addTo(psLayer);
+  });
+
+  document.getElementById('stat-count').textContent = visible.length;
+  if(visible.length){
+    const vus = visible.map(f => f.properties.vu);
+    const mean = vus.reduce((s,v)=>s+v, 0) / vus.length;
+    const min = Math.min(...vus);
+    document.getElementById('stat-mean').textContent = mean.toFixed(2) + ' mm/yr';
+    document.getElementById('stat-max').textContent = min.toFixed(2) + ' mm/yr';
+  } else {
+    document.getElementById('stat-mean').textContent = '—';
+    document.getElementById('stat-max').textContent = '—';
+  }
+  renderHistogram(visible);
+}
+
+document.getElementById('minabs').addEventListener('input', e => { state.minAbs = +e.target.value; rebuild(); });
+document.getElementById('mincoh').addEventListener('input', e => { state.minCoh = +e.target.value; rebuild(); });
+document.getElementById('subside-toggle').addEventListener('click', e => {
+  state.subside = !state.subside;
+  e.currentTarget.classList.toggle('on', state.subside);
+  rebuild();
+});
+document.getElementById('uplift-toggle').addEventListener('click', e => {
+  state.uplift = !state.uplift;
+  e.currentTarget.classList.toggle('on', state.uplift);
+  rebuild();
+});
+
+fetch('../05-web-gis-dashboard/data/persistent_scatterers.geojson').then(r=>r.json()).then(d => {
+  DATA = d;
+  rebuild();
+  const bb = L.latLngBounds(DATA.features.map(f => [f.geometry.coordinates[1], f.geometry.coordinates[0]]));
+  map.fitBounds(bb, {padding:[40,40]});
+}).catch(err => {
+  document.body.insertAdjacentHTML('beforeend',
+    '<div style="position:fixed;top:60px;left:340px;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:#888;background:rgba(15,20,25,0.85);z-index:600;font-size:14px;">Could not load persistent_scatterers.geojson. Serve over HTTP.</div>');
+  console.error(err);
+});
+</script>
+</body>
+</html>
