@@ -1,0 +1,89 @@
+{
+  "city": "Paris, France",
+  "aoi": {
+    "w": 2.2241,
+    "s": 48.8156,
+    "e": 2.4699,
+    "n": 48.9023
+  },
+  "city_center": {
+    "lon": 2.3522,
+    "lat": 48.8566
+  },
+  "categories": [
+    "live",
+    "work",
+    "supply",
+    "care",
+    "learn",
+    "enjoy"
+  ],
+  "category_labels": {
+    "live": "Live (housing)",
+    "work": "Work (offices, coworking)",
+    "supply": "Supply (groceries, markets)",
+    "care": "Care (clinics, pharmacies)",
+    "learn": "Learn (schools, libraries)",
+    "enjoy": "Enjoy (parks, restaurants, culture)"
+  },
+  "walk_speed_kmh": 5.0,
+  "iso_thresholds_min": [
+    5,
+    10,
+    15
+  ],
+  "n_metro_stations_total": 304,
+  "n_walk_graph_nodes": 47812,
+  "n_walk_graph_edges": 71438,
+  "grid_meta": {
+    "grid": {
+      "x0": 2.2241,
+      "y0": 48.8156,
+      "dx": 0.009832,
+      "dy": 0.003468,
+      "nx": 25,
+      "ny": 25
+    },
+    "categories": [
+      "live",
+      "work",
+      "supply",
+      "care",
+      "learn",
+      "enjoy"
+    ],
+    "score_colors": [
+      "#67000d",
+      "#a50f15",
+      "#cb181d",
+      "#fb6a4a",
+      "#fcae91",
+      "#fee5d9",
+      "#33a02c"
+    ],
+    "score_counts": [
+      0,
+      3,
+      44,
+      10,
+      20,
+      182,
+      366
+    ],
+    "score_pct": {
+      "score_0": 0.0,
+      "score_1": 0.5,
+      "score_2": 7.0,
+      "score_3": 1.6,
+      "score_4": 3.2,
+      "score_5": 29.1,
+      "score_6": 58.6
+    },
+    "full_15min_pct": 58.6,
+    "time_scale": 10
+  },
+  "data_files": {
+    "cells": "data/grid.json",
+    "showcases": "data/showcases.json"
+  }
+}
