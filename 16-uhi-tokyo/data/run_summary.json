@@ -1,0 +1,23 @@
+{
+  "city": "Tokyo, Japan",
+  "aoi_bbox": [
+    139.467,
+    35.43,
+    140.067,
+    35.93
+  ],
+  "grid": "32x32",
+  "snapshot": "2024-08-12 14:00 JST (Landsat-9 path 107 row 035 overpass)",
+  "n_cells": 1024,
+  "uhi_intensity_c": 5.63,
+  "mean_center_c": 35.41,
+  "mean_rural_c": 29.78,
+  "lst_range_c": [
+    23.31,
+    37.43
+  ],
+  "spearman_lst_ndvi": -0.495,
+  "spearman_lst_ndvi_land": -0.815,
+  "method": "Landsat L2 ST_B10 -> LST in C . Sentinel-2 L2A B4/B8 -> NDVI . 32x32 grid mean per cell",
+  "data_source": "USGS EarthExplorer (Landsat) . ESA Copernicus (Sentinel-2) . JMA 2024 climate report"
+}
