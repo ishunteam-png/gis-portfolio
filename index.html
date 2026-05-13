@@ -235,16 +235,17 @@ footer a:hover { text-decoration: underline; }
 
 <section class="hero">
   <div class="kicker">GIS / Geospatial Portfolio</div>
-  <h1>Six end-to-end <span class="grad">geospatial projects</span><br>with interactive dashboards</h1>
+  <h1>Ten end-to-end <span class="grad">geospatial projects</span><br>with interactive dashboards</h1>
   <p class="tagline">
     InSAR remote sensing, location intelligence, route optimization, compound flood modelling,
-    web mapping, and GeoAI. Each project ships with its own <strong>interactive Leaflet dashboard</strong>
+    web mapping, GeoAI, <strong>LULC classification, 15-min city accessibility, deforestation time series,
+    and H3 mobility analytics</strong>. Each project ships with its own <strong>interactive Leaflet dashboard</strong>
     — built from scratch, end-to-end, and running live on GitHub Pages.
   </p>
 
   <div class="hero-stats">
-    <div class="hero-stat"><span class="v">6</span><span class="l">Projects</span></div>
-    <div class="hero-stat"><span class="v">6</span><span class="l">Live dashboards</span></div>
+    <div class="hero-stat"><span class="v">10</span><span class="l">Projects</span></div>
+    <div class="hero-stat"><span class="v">10</span><span class="l">Live dashboards</span></div>
   </div>
 
   <div class="cta-row">
@@ -252,7 +253,7 @@ footer a:hover { text-decoration: underline; }
       🚀 Launch flagship dashboard
     </a>
     <a class="cta cta-secondary" href="#projects">
-      Browse all 6 projects ↓
+      Browse all 10 projects ↓
     </a>
   </div>
 </section>
@@ -393,6 +394,102 @@ footer a:hover { text-decoration: underline; }
     <div class="actions">
       <a class="btn btn-primary" href="06-geoai-road-damage/">Open dashboard →</a>
       <a class="btn btn-secondary" href="https://github.com/ishunteam-png/gis-portfolio/tree/main/06-geoai-road-damage" title="Source on GitHub">↗</a>
+    </div>
+  </article>
+
+  <article class="card">
+    <div class="card-head">
+      <div class="card-num">PROJECT<span class="big">07</span></div>
+      <span class="badge"><span class="live-dot"></span>Live</span>
+    </div>
+    <h3>Sentinel-2 LULC — Bengaluru</h3>
+    <p>
+      Random Forest on 6 bands + 7 spectral indices over Bengaluru, 2020 vs 2024.
+      <strong>OA 90.9%, κ 0.89</strong>. Built-up grew <strong>+22.6%</strong>; bare soil
+      dropped 24% — the visible "field-to-construction" lifecycle. Dashboard toggles
+      epochs and shows the Δ-change map.
+    </p>
+    <div class="pills">
+      <span class="pill">Sentinel-2</span>
+      <span class="pill">pystac-client</span>
+      <span class="pill">scikit-learn</span>
+      <span class="pill">rasterio</span>
+    </div>
+    <div class="actions">
+      <a class="btn btn-primary" href="07-lulc-classification/">Open dashboard →</a>
+      <a class="btn btn-secondary" href="https://github.com/ishunteam-png/gis-portfolio/tree/main/07-lulc-classification" title="Source on GitHub">↗</a>
+    </div>
+  </article>
+
+  <article class="card">
+    <div class="card-head">
+      <div class="card-num">PROJECT<span class="big">08</span></div>
+      <span class="badge"><span class="live-dot"></span>Live</span>
+    </div>
+    <h3>15-Minute City — Paris</h3>
+    <p>
+      Carlos Moreno's 6-category framework operationalised. 47,812-node OSM walk
+      graph, per-cell Dijkstra at 1,250 m. <strong>87.7% of cells reach ≥5/6 categories</strong>
+      in a 15-min walk. Dashboard has 8 anchor Métro isochrones (5/10/15-min) and
+      a single-category mode.
+    </p>
+    <div class="pills">
+      <span class="pill">OSMnx</span>
+      <span class="pill">NetworkX</span>
+      <span class="pill">Shapely</span>
+      <span class="pill">alphashape</span>
+    </div>
+    <div class="actions">
+      <a class="btn btn-primary" href="08-15min-city/">Open dashboard →</a>
+      <a class="btn btn-secondary" href="https://github.com/ishunteam-png/gis-portfolio/tree/main/08-15min-city" title="Source on GitHub">↗</a>
+    </div>
+  </article>
+
+  <article class="card">
+    <div class="card-head">
+      <div class="card-num">PROJECT<span class="big">09</span></div>
+      <span class="badge"><span class="live-dot"></span>Live</span>
+    </div>
+    <h3>NDVI Deforestation — Rondônia</h3>
+    <p>
+      Landsat 8/9 + Sentinel-2 SR via Earth Engine, per-pixel breakpoint detection
+      over the BR-364 fishbone corridor. <strong>2,698 km² cleared 2015→2024</strong>;
+      <strong>2019 fire spike + 2024 Lula drop</strong> visible directly in the loss
+      curve. Dashboard with year slider and monthly NDVI chart per pixel.
+    </p>
+    <div class="pills">
+      <span class="pill">Earth Engine</span>
+      <span class="pill">Landsat 8/9</span>
+      <span class="pill">Sentinel-2</span>
+      <span class="pill">LandTrendr</span>
+    </div>
+    <div class="actions">
+      <a class="btn btn-primary" href="09-ndvi-change/">Open dashboard →</a>
+      <a class="btn btn-secondary" href="https://github.com/ishunteam-png/gis-portfolio/tree/main/09-ndvi-change" title="Source on GitHub">↗</a>
+    </div>
+  </article>
+
+  <article class="card">
+    <div class="card-head">
+      <div class="card-num">PROJECT<span class="big">10</span></div>
+      <span class="badge"><span class="live-dot"></span>Live</span>
+    </div>
+    <h3>H3 Mobility — NYC Yellow Taxi</h3>
+    <p>
+      TLC pickups + dropoffs indexed to <strong>H3 res-9 hexagons</strong>, aggregated
+      per time slot. <strong>5 metrics × 5 windows</strong> (incl. net flow, avg fare).
+      Surfaces the AM-peak commute-in / PM-peak airport-dropoff asymmetry. 200 hexes,
+      ~57k daily trips.
+    </p>
+    <div class="pills">
+      <span class="pill">h3-py</span>
+      <span class="pill">DuckDB</span>
+      <span class="pill">pandas</span>
+      <span class="pill">pyarrow</span>
+    </div>
+    <div class="actions">
+      <a class="btn btn-primary" href="10-h3-mobility/">Open dashboard →</a>
+      <a class="btn btn-secondary" href="https://github.com/ishunteam-png/gis-portfolio/tree/main/10-h3-mobility" title="Source on GitHub">↗</a>
     </div>
   </article>
 
